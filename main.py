@@ -73,7 +73,7 @@ def stock_admin():
 @get('/chat')
 def chat():
     """Single page chat app."""
-    return template_with_sender_id('chat')
+    return template_with_sender_id('chat', user_from_get = request.query.get('user') or '')
 
 def template_with_sender_id(*args, **kwargs):
     settings = Settings.singleton()
