@@ -36,7 +36,12 @@ class GcmSettings(ndb.Model):
     api_key = ndb.StringProperty(default="", indexed=False)
 
 # TODO: Probably cheaper to have a singleton entity with a repeated property?
-class Registration(ndb.Model):
+class GCMRegistration(ndb.Model):
+    type = ndb.IntegerProperty(required=True, choices=[TYPE_STOCK, TYPE_CHAT,
+                                                       TYPE_CHAT_STALE])
+    creation_date = ndb.DateTimeProperty(auto_now_add=True)
+
+class FirefoxRegistration(ndb.Model):
     type = ndb.IntegerProperty(required=True, choices=[TYPE_STOCK, TYPE_CHAT,
                                                        TYPE_CHAT_STALE])
     creation_date = ndb.DateTimeProperty(auto_now_add=True)
@@ -159,28 +164,47 @@ def register_chat():
 
 def register(type):
     """XHR adding a registration ID to our list."""
-    if request.forms.subscription_id:
-        if request.forms.endpoint != DEFAULT_GCM_ENDPOINT:
-            abort(500, "Push servers other than GCM are not yet supported.")
+    response.status = 500
+    logging.error("@@@@@@ register: endpoint:  " + request.forms.endpoint)
+    logging.error("@@@@@@ register: subscription:  " + request.forms.subscription_id)
 
-        registration = Registration.get_or_insert(request.forms.subscription_id,
+    if request.forms.subscription_id:
+        if request.forms.endpoint == DEFAULT_GCM_ENDPOINT:
+            registration = GCMRegistration.get_or_insert(request.forms.subscription_id,
                                                   type=type)
-        registration.put()
-    response.status = 201
+            registration.put()
+            response.status = 201
+        else:
+            registration = FirefoxRegistration.get_or_insert(request.forms.endpoint,
+                                                  type=type)
+            registration.put()
+            response.status = 201
+    else:
+        logging.error("no subscrptionid")
+    logging.error("no dddd")
+
     return ""
 
 @post('/stock/clear-registrations')
 def clear_stock_registrations():
-    ndb.delete_multi(Registration.query(Registration.type == TYPE_STOCK)
+    ndb.delete_multi(GCMRegistration.query(GCMRegistration.type == TYPE_STOCK)
+                                 .fetch(keys_only=True))
+    ndb.delete_multi(FirefoxRegistration.query(FirefoxRegistration.type == TYPE_STOCK)
                                  .fetch(keys_only=True))
     return ""
 
 @post('/chat/clear-registrations')
 def clear_chat_registrations():
-    ndb.delete_multi(Registration.query(Registration.type == TYPE_CHAT)
+    ndb.delete_multi(GCMRegistration.query(GCMRegistration.type == TYPE_CHAT)
                                  .fetch(keys_only=True))
-    ndb.delete_multi(Registration.query(Registration.type == TYPE_CHAT_STALE)
+    ndb.delete_multi(GCMRegistration.query(GCMRegistration.type == TYPE_CHAT_STALE)
                                  .fetch(keys_only=True))
+
+    ndb.delete_multi(FirefoxRegistration.query(FirefoxRegistration.type == TYPE_CHAT)
+                                 .fetch(keys_only=True))
+    ndb.delete_multi(FirefoxRegistration.query(FirefoxRegistration.type == TYPE_CHAT_STALE)
+                                 .fetch(keys_only=True))
+
     return ""
 
 @post('/stock/trigger-drop')
@@ -198,13 +222,46 @@ def send(type, data):
     message.text = data
     message.put()
 
-    # Send message
-    # TODO: Should limit batches to 1000 registration_ids at a time.
-    registration_keys = Registration.query(Registration.type == type) \
+    status = sendGCM(type, data)
+    status = sendFirefox(type, data)
+
+    response.status = 201
+
+    return ""
+
+def sendFirefox(type, data):
+    logging.error("******* sendFirefox. Data: " + data)
+
+    registration_keys = FirefoxRegistration.query(FirefoxRegistration.type == type) \
                                     .fetch(keys_only=True)
     registration_ids = [key.string_id() for key in registration_keys]
     if not registration_ids:
-        abort(500, "No registered devices.")
+        return 200
+
+    for pushEndpoint in enumerate(registration_ids):
+        logging.error("@@@@ " + pushEndpoint[1])
+
+        result = urlfetch.fetch(url=pushEndpoint[1],
+                                payload="",
+                                method=urlfetch.PUT)
+        if result.status_code != 200:
+            logging.error("Sending failed %d:\n%s" % (result.status_code,
+                                                      result.content))
+
+        ## todo deal with stale connections.
+        
+    return 200;
+
+def sendGCM(type, data):
+    logging.error("******* sendGCM")
+
+    # TODO: Should limit batches to 1000 registration_ids at a time.
+    registration_keys = GCMRegistration.query(GCMRegistration.type == type) \
+                                    .fetch(keys_only=True)
+    registration_ids = [key.string_id() for key in registration_keys]
+    if not registration_ids:
+        return 200
+
     post_data = json.dumps({
         'registration_ids': registration_ids,
         'data': {
@@ -238,11 +295,8 @@ def send(type, data):
         ndb.put_multi(stale_registrations)
     except:
         logging.exception("Failed to cull stale registrations")
-    response.status = result.status_code
-    if users.is_current_user_admin():
-        return result.content
-    else:
-        return ""
+    return result.status_code
+
 
 bottle.run(server='gae', debug=True)
 app = bottle.app()
