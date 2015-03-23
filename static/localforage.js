@@ -779,7 +779,7 @@ requireModule('promise/polyfill').polyfill();
             try {
                 callback(JSON.stringify(value));
             } catch (e) {
-                window.console.error("Couldn't convert value into a JSON " +
+                console.error("Couldn't convert value into a JSON " +
                                      'string: ', value);
 
                 callback(null, e);
@@ -916,7 +916,7 @@ requireModule('promise/polyfill').polyfill();
     } else {
         this.localforageSerializer = localforageSerializer;
     }
-}).call(window);
+}).call(typeof window !== 'undefined' ? window : self);
 // Some code originally from async_storage.js in
 // [Gaia](https://github.com/mozilla-b2g/gaia).
 (function() {
@@ -974,8 +974,7 @@ requireModule('promise/polyfill').polyfill();
 
         // Cast the key to a string, as that's all we can set as a key.
         if (typeof key !== 'string') {
-            window.console.warn(key +
-                                ' used as a key, but it is not a string.');
+            console.warn(key + ' used as a key, but it is not a string.');
             key = String(key);
         }
 
@@ -1050,8 +1049,7 @@ requireModule('promise/polyfill').polyfill();
 
         // Cast the key to a string, as that's all we can set as a key.
         if (typeof key !== 'string') {
-            window.console.warn(key +
-                                ' used as a key, but it is not a string.');
+            console.warn(key + ' used as a key, but it is not a string.');
             key = String(key);
         }
 
@@ -1098,8 +1096,7 @@ requireModule('promise/polyfill').polyfill();
 
         // Cast the key to a string, as that's all we can set as a key.
         if (typeof key !== 'string') {
-            window.console.warn(key +
-                                ' used as a key, but it is not a string.');
+            console.warn(key + ' used as a key, but it is not a string.');
             key = String(key);
         }
 
@@ -1329,7 +1326,8 @@ requireModule('promise/polyfill').polyfill();
     } else {
         this.asyncStorage = asyncStorage;
     }
-}).call(window);
+}).call(typeof window !== 'undefined' ? window : this);
+
 // If IndexedDB isn't available, we'll fall back to localStorage.
 // Note that this will have considerable performance and storage
 // side-effects (all data will be serialized on save and only data that
@@ -1442,8 +1440,7 @@ requireModule('promise/polyfill').polyfill();
 
         // Cast the key to a string, as that's all we can set as a key.
         if (typeof key !== 'string') {
-            window.console.warn(key +
-                                ' used as a key, but it is not a string.');
+            console.warn(key + ' used as a key, but it is not a string.');
             key = String(key);
         }
 
@@ -1560,8 +1557,7 @@ requireModule('promise/polyfill').polyfill();
 
         // Cast the key to a string, as that's all we can set as a key.
         if (typeof key !== 'string') {
-            window.console.warn(key +
-                                ' used as a key, but it is not a string.');
+            console.warn(key + ' used as a key, but it is not a string.');
             key = String(key);
         }
 
@@ -1583,8 +1579,7 @@ requireModule('promise/polyfill').polyfill();
 
         // Cast the key to a string, as that's all we can set as a key.
         if (typeof key !== 'string') {
-            window.console.warn(key +
-                                ' used as a key, but it is not a string.');
+            console.warn(key + ' used as a key, but it is not a string.');
             key = String(key);
         }
 
@@ -1658,7 +1653,7 @@ requireModule('promise/polyfill').polyfill();
     } else {
         this.localStorageWrapper = localStorageWrapper;
     }
-}).call(window);
+}).call(typeof window !== 'undefined' ? window : self);
 /*
  * Includes code from:
  *
@@ -1766,8 +1761,7 @@ requireModule('promise/polyfill').polyfill();
 
         // Cast the key to a string, as that's all we can set as a key.
         if (typeof key !== 'string') {
-            window.console.warn(key +
-                                ' used as a key, but it is not a string.');
+            console.warn(key + ' used as a key, but it is not a string.');
             key = String(key);
         }
 
@@ -1850,8 +1844,7 @@ requireModule('promise/polyfill').polyfill();
 
         // Cast the key to a string, as that's all we can set as a key.
         if (typeof key !== 'string') {
-            window.console.warn(key +
-                                ' used as a key, but it is not a string.');
+            console.warn(key + ' used as a key, but it is not a string.');
             key = String(key);
         }
 
@@ -1908,8 +1901,7 @@ requireModule('promise/polyfill').polyfill();
 
         // Cast the key to a string, as that's all we can set as a key.
         if (typeof key !== 'string') {
-            window.console.warn(key +
-                                ' used as a key, but it is not a string.');
+            console.warn(key + ' used as a key, but it is not a string.');
             key = String(key);
         }
 
@@ -2074,7 +2066,7 @@ requireModule('promise/polyfill').polyfill();
     } else {
         this.webSQLStorage = webSQLStorage;
     }
-}).call(window);
+}).call(typeof window !== 'undefined' ? window : self);
 (function() {
     'use strict';
 
@@ -2154,6 +2146,12 @@ requireModule('promise/polyfill').polyfill();
 
         result[DriverType.WEBSQL] = !!self.openDatabase;
         result[DriverType.INDEXEDDB] = !!(function() {
+
+            // If we are in a ServiceWorker, let's hope all we have to do
+            // is check for indexedDB.
+            if (typeof window == 'undefined' && self.indexedDB) {
+                return true;
+            }
             // We mimic PouchDB here; just UA test for Safari (which, as of
             // iOS 8/Yosemite, doesn't properly support IndexedDB).
             // IndexedDB support is broken and different from Blink's.
@@ -2494,4 +2492,4 @@ requireModule('promise/polyfill').polyfill();
     } else {
         this.localforage = localForage;
     }
-}).call(window);
+}).call(typeof window !== 'undefined' ? window : self);
