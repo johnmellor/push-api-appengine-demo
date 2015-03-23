@@ -162,9 +162,6 @@
             setStatus('join', className, message);
             setStatus('send', className, message);
         }
-        // HACK for very old versions of Chrome: navigator.push has been removed
-        // from the spec.
-        var hasPush = !!window.PushManager || !!navigator.push;
         var hasNotification =
                 !!window.ServiceWorkerRegistration &&
                 !!ServiceWorkerRegistration.prototype.showNotification;
@@ -172,10 +169,10 @@
         // showNotification.
         if (!!window.Notification) hasNotification = true;
         var hasServiceWorker = !!navigator.serviceWorker;
-        var supportsPush = hasPush && hasNotification && hasServiceWorker;
+        var supportsPush = hasNotification && hasServiceWorker;
         if (!supportsPush) {
-            if (!hasPush || !hasServiceWorker) {
-                var whatsMissing = hasPush ? "ServiceWorker" : hasServiceWorker ? "push messaging" : "push messaging or ServiceWorker";
+            if (!hasServiceWorker) {
+                var whatsMissing = hasServiceWorker ? "push messaging" : "push messaging or ServiceWorker";
                 setBothStatuses('fail', "Your browser does not support " + whatsMissing + "; you won't be able to receive messages.");
             } else if (!hasNotification) {
                 setBothStatuses('fail', "Your browser doesn't support notifications; you won't be able to receive messages when the page is not open");
@@ -223,7 +220,7 @@
             setStatus('join', '', "");
 
             console.log("join-form submit handler");
-            if (!hasPush || !hasServiceWorker) {
+            if (!hasServiceWorker) {
                 showChatScreen(false);
                 return;
             }
@@ -268,8 +265,6 @@
                 doSubscribe(navigator.push);
             } else {
                 navigator.serviceWorker.ready.then(function(swr) {
-                    // TODO: Ideally we wouldn't have to check this here, since
-                    // the hasPush check earlier would guarantee it.
                     if (!swr.pushManager) {
                         setBothStatuses('fail', "Your browser does not support push messaging; you won't be able to receive messages.");
                         showChatScreen(false);
