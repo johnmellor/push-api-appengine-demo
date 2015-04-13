@@ -219,7 +219,9 @@ def send(type, data):
             abort(500, "No devices are registered to receive messages")
         else:
             abort(500, "Failed to send message to any of the %d registered "
-                       "devices" % failure_total)
+                       "devices%s%s"
+                       % (gcm_stats.total_count + firefox_stats.total_count,
+                          gcm_stats.text, firefox_stats.text))
 
     response.status = 201
     return "Message sent successfully to %d/%d GCM devices and %d/%d Firefox " \
