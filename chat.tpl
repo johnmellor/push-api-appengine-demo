@@ -212,7 +212,13 @@
 
         $('#join-form').addEventListener('submit', function(evt) {
             evt.preventDefault();
-            joinChat();
+            if (!$('#username').value)
+                setStatus('join', 'fail', "Username must not be empty.")
+            else if (!/^[^\s@:]+$/.test($('#username').value))
+                setStatus('join', 'fail',
+                          "Username must not contain '@', ':', or whitespace.")
+            else
+                joinChat();
         });
 
         function joinChat() {
@@ -285,6 +291,7 @@
             console.log("Sending subscription to " + location.hostname + "...");
 
             var formData = new FormData();
+            formData.append('username', $('#username').value);
             formData.append('endpoint', endpoint);
             formData.append('subscription_id', subscriptionId);
 
@@ -346,8 +353,7 @@
             message = message.replace(":)", "😃");  // Smiley
 
             var formData = new FormData();
-            formData.append('message',
-                $('#username').value + ": " + message);
+            formData.append('message', $('#username').value + ": " + message);
 
             var xhr = new XMLHttpRequest();
             xhr.onload = function() {

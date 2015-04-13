@@ -46,6 +46,7 @@ class GcmSettings(ndb.Model):
 # the key of a Firefox Registration entity is the push endpoint URL.
 # If more push services are added, consider namespacing keys to avoid collision.
 class Registration(ndb.Model):
+    username = ndb.StringProperty()
     type = msgprop.EnumProperty(RegistrationType, required=True, indexed=True)
     service = msgprop.EnumProperty(PushService, required=True, indexed=True)
     creation_date = ndb.DateTimeProperty(auto_now_add=True)
@@ -166,6 +167,10 @@ def register(type):
         registration = Registration.get_or_insert(request.forms.endpoint,
                                                   type=type,
                                                   service=PushService.FIREFOX)
+
+    if request.forms.username:
+        registration.username = request.forms.username
+
     registration.put()
     response.status = 201
     return ""
@@ -186,13 +191,17 @@ def send_chat():
 
 def send(type, data):
     """XHR requesting that we send a push message to all users."""
-    # Store message
-    message = Message(parent=thread_key())
-    message.text = data
-    message.put()
+    recipients = []  # Broadcast to everyone by default
+    if type == RegistrationType.CHAT:
+        sender, recipients, message_text = parse_chat_message(data)
 
-    gcm_stats = sendGCM(type, data)
-    firefox_stats = sendFirefox(type, data)
+        # Store message
+        message = Message(parent=thread_key())
+        message.text = data
+        message.put()
+
+    gcm_stats = sendGCM(type, data, recipients)
+    firefox_stats = sendFirefox(type, data, recipients)
 
     if gcm_stats.total_count + firefox_stats.total_count \
             != Registration.query(Registration.type == type).count():
@@ -224,11 +233,17 @@ class SendStats:
     total_count = 0
     text = ""
 
-def sendFirefox(type, data):
-    firefox_registration_keys = \
-            Registration.query(Registration.type == type,
-                               Registration.service == PushService.FIREFOX) \
-                        .fetch(keys_only=True)
+def sendFirefox(type, data, recipients):
+    if recipients:
+        ndb_query = Registration.query(
+            Registration.type == type,
+            Registration.service == PushService.FIREFOX,
+            Registration.username.IN(recipients))
+    else:
+        ndb_query = Registration.query(
+            Registration.type == type,
+            Registration.service == PushService.FIREFOX)
+    firefox_registration_keys = ndb_query.fetch(keys_only=True)
     push_endpoints = [key.string_id() for key in firefox_registration_keys]
 
     stats = SendStats()
@@ -248,11 +263,15 @@ def sendFirefox(type, data):
         # TODO: Deal with stale connections.
     return stats
 
-def sendGCM(type, data):
-    gcm_registration_keys = \
-            Registration.query(Registration.type == type,
-                               Registration.service == PushService.GCM) \
-                        .fetch(keys_only=True)
+def sendGCM(type, data, recipients):
+    if recipients:
+        ndb_query = Registration.query(Registration.type == type,
+                                       Registration.service == PushService.GCM,
+                                       Registration.username.IN(recipients))
+    else:
+        ndb_query = Registration.query(Registration.type == type,
+                                       Registration.service == PushService.GCM)
+    gcm_registration_keys = ndb_query.fetch(keys_only=True)
     registration_ids = [key.string_id() for key in gcm_registration_keys]
 
     stats = SendStats()
@@ -311,6 +330,18 @@ def sendGCM(type, data):
     ndb.put_multi(stale_registrations)
 
     return stats
+
+def parse_chat_message(sender_and_message):
+    try:
+        sender, message_text = re.split(r': ', sender_and_message, maxsplit=1)
+    except ValueError:
+        sender = ""
+        message_text = sender_and_message
+
+    # If @mentions are present, only deliver to those users.
+    recipients = re.findall(r'(?<!\S)@(\S+)', message_text)
+
+    return sender, recipients, message_text
 
 
 bottle.run(server='gae', debug=True)
