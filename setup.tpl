@@ -34,6 +34,9 @@
         <label>GCM API key
             <input name="api_key" value="{{api_key}}">
         </label>
+        <label>Spam blacklist regex
+            <input name="spam_regex" value="{{spam_regex}}">
+        </label>
         <input type="submit">
     </form>
 </body></html>

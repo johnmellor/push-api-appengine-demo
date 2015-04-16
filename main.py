@@ -41,6 +41,7 @@ class GcmSettings(ndb.Model):
             indexed=False)
     sender_id = ndb.StringProperty(default="", indexed=False)
     api_key = ndb.StringProperty(default="", indexed=False)
+    spam_regex = ndb.StringProperty(default="", indexed=False)
 
 # The key of a GCM Registration entity is the push subscription ID;
 # the key of a Firefox Registration entity is the push endpoint URL.
@@ -82,12 +83,14 @@ def setup():
         settings.endpoint = request.forms.endpoint
         settings.sender_id = request.forms.sender_id
         settings.api_key = request.forms.api_key
+        settings.spam_regex = request.forms.spam_regex
         settings.put()
         result = 'Updated successfully'
     return template('setup', result=result,
                              endpoint=settings.endpoint,
                              sender_id=settings.sender_id,
-                             api_key=settings.api_key)
+                             api_key=settings.api_key,
+                             spam_regex=settings.spam_regex)
 
 @get('/manifest.json')
 def manifest():
@@ -194,6 +197,12 @@ def send(type, data):
     recipients = []  # Broadcast to everyone by default
     if type == RegistrationType.CHAT:
         sender, recipients, message_text = parse_chat_message(data)
+
+        settings = GcmSettings.singleton()
+        if (not recipients and settings.spam_regex
+            and re.search(settings.spam_regex, message_text)):
+            # Spam only sends a push message to the sender.
+            recipients = [sender]
 
         # Store message
         message = Message(parent=thread_key())
