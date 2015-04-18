@@ -190,24 +190,38 @@ def clear_chat_registrations():
 
 @post('/chat/send')
 def send_chat():
-    return send(RegistrationType.CHAT, request.forms.message)
+    sender_and_message = request.forms.message
+    sender, recipients, message_text = parse_chat_message(sender_and_message)
 
-def send(type, data):
-    """XHR requesting that we send a push message to all users."""
-    recipients = []  # Broadcast to everyone by default
-    if type == RegistrationType.CHAT:
-        sender, recipients, message_text = parse_chat_message(data)
-
+    if not recipients:
         settings = GcmSettings.singleton()
-        if (not recipients and settings.spam_regex
-            and re.search(settings.spam_regex, message_text)):
+        if (settings.spam_regex
+                and re.search(settings.spam_regex, sender_and_message)):
             # Spam only sends a push message to the sender.
+            sender_and_message += " @" + sender
             recipients = [sender]
+        else:
+            last_message = Message.query(ancestor=thread_key()) \
+                                  .order(-Message.creation_date).get()
+            if last_message and last_message.text == sender_and_message:
+                abort(400, """
+Please don't send the same message twice in a row - each
+message goes to many devices. If you need to send a lot of
+messages for testing, then send them only to specific users
+by including one or more @username in your message, or run
+your own test server using the source code at
+https://github.com/johnmellor/push-api-appengine-demo""")
 
-        # Store message
-        message = Message(parent=thread_key())
-        message.text = data
-        message.put()
+    # Store message
+    message = Message(parent=thread_key())
+    message.text = sender_and_message
+    message.put()
+
+    return send(RegistrationType.CHAT, sender_and_message, recipients)
+
+def send(type, data, recipients=[]):
+    """XHR requesting that we send a push message to all users, or the specified
+    recipients."""
 
     gcm_stats = sendGCM(type, data, recipients)
     firefox_stats = sendFirefox(type, data, recipients)
