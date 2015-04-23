@@ -63,6 +63,9 @@
             font-size: 16px;
             vertical-align: middle;
         }
+        #incoming-messages {
+            white-space: pre-wrap;
+        }
         #message {
             line-height: 32px;
         }
