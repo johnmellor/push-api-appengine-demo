@@ -125,7 +125,7 @@ def chat():
 def chat_messages():
     """XHR to fetch the most recent chat messages."""
     messages = reversed(Message.query(ancestor=thread_key())
-                               .order(-Message.creation_date).fetch(10))
+                               .order(-Message.creation_date).fetch(20))
     return "\n".join(re.sub(r'\r\n|\r|\n', ' ', cgi.escape(m.text))
                      for m in messages)
 
