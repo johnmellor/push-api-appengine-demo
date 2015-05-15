@@ -284,19 +284,28 @@
         function doSubscribe(pushManager) {
             pushManager.subscribe({userVisibleOnly: true}).then(function(ps) {
                 console.log(JSON.stringify(ps));
-                sendSubscriptionToBackend(ps.endpoint, ps.subscriptionId);
+
+                // The API was updated to only return an |endpoint|, but Chrome
+                // 42 and 43 implemented the older API which provides a separate
+                // subscriptionId. Concatenate them for backwards compatibility.
+                var endpoint = ps.endpoint;
+                if ('subscriptionId' in ps
+                        && !endpoint.includes(ps.subscriptionId)) {
+                    endpoint += "/" + ps.subscriptionId;
+                }
+
+                sendSubscriptionToBackend(endpoint);
             }, function(err) {
                 setStatus('join', 'fail', "API call unsuccessful! " + err);
             });
         }
 
-        function sendSubscriptionToBackend(endpoint, subscriptionId) {
+        function sendSubscriptionToBackend(endpoint) {
             console.log("Sending subscription to " + location.hostname + "...");
 
             var formData = new FormData();
             formData.append('username', $('#username').value);
             formData.append('endpoint', endpoint);
-            formData.append('subscription_id', subscriptionId);
 
             var xhr = new XMLHttpRequest();
             xhr.onload = function() {
@@ -309,7 +318,7 @@
                 }
             };
             xhr.onerror = xhr.onabort = function() {
-                setStatus('join', 'fail', "Failed to send subscription ID!");
+                setStatus('join', 'fail', "Failed to send endpoint to server!");
             };
             xhr.open('POST', '/chat/subscribe');
             xhr.send(formData);

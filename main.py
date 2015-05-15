@@ -158,10 +158,12 @@ def register(type):
     if not request.forms.endpoint:
         abort(400, "Missing endpoint")
 
-    if request.forms.endpoint == DEFAULT_GCM_ENDPOINT:
-        if not request.forms.subscription_id:
-            abort(400, "Missing subscription_id")
-        registration = Registration.get_or_insert(request.forms.subscription_id,
+    if request.forms.endpoint.startswith(DEFAULT_GCM_ENDPOINT):
+        prefix_len = len(DEFAULT_GCM_ENDPOINT + '/')
+        gcm_subscription_id = request.forms.endpoint[prefix_len:]
+        if not gcm_subscription_id:
+            abort(400, "Could not parse subscription ID from endpoint")
+        registration = Registration.get_or_insert(gcm_subscription_id,
                                                   type=type,
                                                   service=PushService.GCM)
     else:
