@@ -52,7 +52,26 @@ function showNotification(usernameAndMessage) {
         icon: '/static/cat.png'
     };
 
-    return self.registration.showNotification(title, options);
+    if (self.registration.showNotification)
+        return self.registration.showNotification(title, options);
+
+    // HACK: Firefox doesn't yet support showing notifications from Service
+    // Workers. So instead postMessage to the window, if any, and tell it to
+    // show a notification.
+    return clients.matchAll({
+        type: "window",
+        includeUncontrolled: false
+    }).then(function(clientList) {
+        if (clientList.length) {
+            clientList[0].postMessage({title: title, options: options});
+        } else {
+            console.warning("Your browser does not support showing " +
+                            "notifications from a Service Worker. Try " +
+                            "leaving a tab open, and then the SW might be " +
+                            "able to show a notification via that tab (using " +
+                            "postMessage).");
+        }
+    });
 }
 
 this.addEventListener('notificationclick', function(evt) {

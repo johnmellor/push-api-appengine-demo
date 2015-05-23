@@ -244,7 +244,9 @@
         }
 
         function requestPermission() {
-            if (!hasNotification) {
+            // HACK: Request permission for notifications even though Service
+            // Worker notifications aren't supported. Needed for Firefox.
+            if (!hasNotification && !window.Notification) {
                 subscribeForPush();
                 return;
             }
@@ -314,6 +316,20 @@
                                               + ": " + xhr.statusText);
                 } else {
                     setStatus('join', 'success', "Subscribed.");
+                    if (/Firefox\/4\d\.[\d.]+$/.test(navigator.userAgent)) {
+                        // HACK: Firefox supports neither Clients.claim, nor
+                        // passing {includeUncontrolled:true} to
+                        // Clients.matchAll. So force a reload so this page
+                        // hopefully becomes controlled, hence contactable from
+                        // the Service Worker.
+                        // https://bugzilla.mozilla.org/show_bug.cgi?id=1130684
+                        // https://bugzilla.mozilla.org/show_bug.cgi?id=1130685
+                        localforage.setItem('username', $('#username').value)
+                                   .then(function() {
+                            location.reload();
+                        });
+                        return;
+                    }
                     showChatScreen(false);
                 }
             };
@@ -384,6 +400,14 @@
             };
             xhr.open('POST', '/chat/send');
             xhr.send(formData);
+        });
+
+        // HACK: On Firefox, Service Workers can't yet show notifications from a
+        // Service Worker; instead the SW asks an existing open controlled tab
+        // (if any) to show the notification on its behalf.
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=1114554
+        navigator.serviceWorker.addEventListener("message", function(event) {
+            new Notification(event.data.title, event.data.options);
         });
     </script>
 
