@@ -212,7 +212,7 @@ message goes to many devices. If you need to send a lot of
 messages for testing, then send them only to specific users
 by including one or more @username in your message, or run
 your own test server using the source code at
-https://github.com/johnmellor/push-api-appengine-demo""")
+https://github.com/jakearchibald/push-api-appengine-demo""")
 
     # Store message
     message = Message(parent=thread_key())
