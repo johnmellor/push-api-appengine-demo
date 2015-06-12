@@ -80,6 +80,60 @@ self.addEventListener('push', function(event) {
   );
 });
 
+self.addEventListener('sync', function(event) {
+  // There are a lot of race conditions with the outbox.
+  // Ideally I should use IDB properly & have an outbox store where
+  // each entry is a message.
+  console.log('Background sync event');
+  // TODO: add event.waitUntil once it's supported
+  localforage.getItem('outbox').then(function(messages) {
+    if (!messages) return;
+    return messages.reduce(function(chain, message) {
+      return chain.then(function() {
+        var formData = new FormData();
+        formData.append('message', message);
+        return fetch('/chat/send', {
+          method: 'POST',
+          body: formData
+        });
+      }).then(function(response) {
+        if (response.status < 200 || response.status >= 300) {
+          var error = Error(response.statusText);
+          error.status = response.status;
+          throw error;
+        }
+        messages.shift();
+        return localforage.setItem('outbox', messages);
+      });
+    }, Promise.resolve());
+  }).then(function() {
+    return broadcast({
+      'setStatus': 'Sent',
+      'type': 'success'
+    });
+  }).catch(function(err) {
+    if ('status' in err) {
+      // I'm happy to recover from these kinds of errors.
+      // Could mean one of the messages in the outbox is
+      // unsendable, so happy to ditch the outbox.
+      broadcast({
+        'setStatus': err.message,
+        'type': 'fail'
+      });
+      return localforage.setItem('outbox', []);
+    }
+    throw err;
+  });
+});
+
+function broadcast(message) {
+  return clients.matchAll().then(function(clients) {
+    for (var client of clients) {
+      client.postMessage(message);
+    }
+  });
+}
+
 function showNotification(usernameAndMessage) {
   var splits = usernameAndMessage.split(/: (.*)/);
   var username = splits[0];
@@ -103,7 +157,9 @@ function showNotification(usernameAndMessage) {
     type: "window"
   }).then(function(clientList) {
     if (clientList.length) {
-      clientList[0].postMessage({title: title, options: options});
+      clientList[0].postMessage({
+        notification: {title: title, options: options}
+      });
     } else {
       console.warning(
         "Your browser does not support showing " +

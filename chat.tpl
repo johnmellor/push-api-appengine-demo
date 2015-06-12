@@ -223,7 +223,7 @@
         });
       });
 
-      $('#logout').addEventListener('click', function(evt) {
+      $('#logout').addEventListener('click', function(event) {
         navigator.serviceWorker.getRegistration('/chat/').then(function(r) {
           // Unregistering the SW will also unsubscribe from Push.
           if (r) return r.unregister();
@@ -234,8 +234,8 @@
         });
       });
 
-      $('#join-form').addEventListener('submit', function(evt) {
-        evt.preventDefault();
+      $('#join-form').addEventListener('submit', function(event) {
+        event.preventDefault();
         if (!$('#username').value) {
           setStatus('join', 'fail', "Username must not be empty.")
         }
@@ -399,21 +399,45 @@
         req.send();
       }
 
+      function deferredSend(message) {
+        return localforage.getItem('outbox').then(function(outbox) {
+          outbox = outbox || [];
+          outbox.push(message);
+          return localforage.setItem('outbox', outbox);
+        }).then(function() {
+          return navigator.serviceWorker.ready;
+        }).then(function(reg) {
+          return reg.sync.register({tag: 'outbox'});
+        })
+      }
+
       updateText().then(function() {
         fetchMessages();
       });
 
-      $('#send-form').addEventListener('submit', function(evt) {
-        evt.preventDefault();
+      $('#send-form').addEventListener('submit', function(event) {
+        event.preventDefault();
         console.log("Sending message to " + location.hostname + "...");
         setStatus('send', '', "");
 
         var message = $('#message').value;
         message = message.replace(":)", "😃");  // Smiley
+        message = $('#username').value + ": " + message;
+
+        if (navigator.serviceWorker.controller && 'sync' in ServiceWorkerRegistration.prototype) {
+          console.log("Sending via background sync");
+          deferredSend(message).then(function() {
+            setStatus('send', 'progress', "Sending…");
+          }, function(err) {
+            setStatus('send', 'fail', "Failed to register background sync!");
+          });
+          return;
+        }
 
         var formData = new FormData();
-        formData.append('message', $('#username').value + ": " + message);
+        formData.append('message', message);
 
+        // TODO: use fetch() instead
         var xhr = new XMLHttpRequest();
         xhr.onload = function() {
           var statusString = xhr.status + ": " + xhr.statusText;
@@ -439,13 +463,29 @@
         xhr.send(formData);
       });
 
-      // HACK: On Firefox, Service Workers can't yet show notifications from a
-      // Service Worker; instead the SW asks an existing open controlled tab
-      // (if any) to show the notification on its behalf.
-      // https://bugzilla.mozilla.org/show_bug.cgi?id=1114554
-      navigator.serviceWorker.addEventListener("message", function(event) {
-        new Notification(event.data.title, event.data.options);
-      });
+
+      function onMessage(event) {
+        // If we're coming from window.onmessage, check the origin.
+        // If the message is from the SW, event.origin is present, 
+        // but is an empty string.
+        if (event.origin && event.origin != location.origin) return;
+
+        if ('notification' in event.data) {
+          // HACK: On Firefox, Service Workers can't yet show notifications from a
+          // Service Worker; instead the SW asks an existing open controlled tab
+          // (if any) to show the notification on its behalf.
+          // https://bugzilla.mozilla.org/show_bug.cgi?id=1114554
+          new Notification(event.data.notification.title, event.data.notification.options);
+        }
+        else if ('setStatus' in event.data) {
+          setStatus('send', event.data.type, event.data.setStatus);
+          if (event.data.type == 'success') {
+            $('#message').value = "";
+          }
+        }
+      }
+      window.addEventListener('message', onMessage); // non-standard Chrome behaviour
+      navigator.serviceWorker.addEventListener("message", onMessage);
 
       var swRegisterPromise = navigator.serviceWorker.register('/chat/sw.js');
       var isFreshRegistration = swRegisterPromise.then(function(reg) {
