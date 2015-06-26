@@ -282,7 +282,7 @@ def sendFirefox(type, data, recipients):
         result = urlfetch.fetch(url=endpoint,
                                 payload="",
                                 method=urlfetch.PUT)
-        if result.status_code == 200:
+        if 200 <= result.status_code < 300:
             stats.success_count += 1
         else:
             logging.error("Firefox send failed %d:\n%s" % (result.status_code,
