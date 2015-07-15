@@ -31,8 +31,14 @@ self.addEventListener("activate", function(event) {
 
 self.addEventListener('fetch', function(event) {
   var request = event.request;
+  var url = new URL(request.url);
 
   if (request.method != 'GET') return;
+
+  if (url.origin == location.origin && url.pathname == '/') {
+    event.respondWith(Response.redirect('/chat/'));
+    return;
+  }
 
   event.respondWith(
     caches.match(request).then(function(response) {

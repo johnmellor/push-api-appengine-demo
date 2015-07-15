@@ -45,6 +45,7 @@ handlers:
 - url: .*  # This regex directs all routes to main.bottle
   script: main.app
   secure: always
+  login: required
 
 # Third party libraries that are included in the App Engine SDK must be listed
 # here if you want to use them.  See
@@ -56,3 +57,7 @@ handlers:
 #libraries:
 #- name: jinja2
 #  version: latest
+
+skip_files:
+- ^(.*/)?.*/node_modules/.*$
+- ^(node_modules/.*)

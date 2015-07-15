@@ -12,6 +12,7 @@ import re
 import os
 from protorpc import messages
 import urllib
+import hashlib
 
 DEFAULT_GCM_ENDPOINT = 'https://android.googleapis.com/gcm/send'
 
@@ -92,6 +93,7 @@ def setup():
                              api_key=settings.api_key,
                              spam_regex=settings.spam_regex)
 
+
 @get('/manifest.json')
 def manifest():
     return {
@@ -108,18 +110,32 @@ def manifest():
         "gcm_user_visible_only": True
     }
 
+
 @get('/')
 def root_redirect():
     redirect("/chat/")
+
 
 @get('/chat')
 def chat_redirect():
     redirect("/chat/")
 
+
 @get('/chat/')
 def chat():
     """Single page chat app."""
-    return template_with_sender_id('chat', user_from_get = request.query.get('user') or '')
+    user = users.get_current_user()
+    email_hash = hashlib.md5(user.email()).hexdigest()
+    logout_url = users.create_logout_url('/chat/')
+
+    
+    return template_with_sender_id(
+        'chat',
+        user_from_get=request.query.get('user') or '',
+        email_hash=email_hash,
+        logout_url=logout_url
+    )
+
 
 @get('/chat/messages')
 def chat_messages():
@@ -129,9 +145,11 @@ def chat_messages():
     return "\n".join(re.sub(r'\r\n|\r|\n', ' ', cgi.escape(m.text))
                      for m in messages)
 
+
 @get('/admin')
 def legacy_chat_admin_redirect():
     redirect("/chat/admin")
+
 
 @get('/chat/admin')
 def chat_admin():
@@ -141,6 +159,7 @@ def chat_admin():
     # This template doesn't actually use the sender_id, but we want the warning.
     return template_with_sender_id('chat_admin')
 
+
 def template_with_sender_id(*args, **kwargs):
     settings = GcmSettings.singleton()
     if not settings.sender_id or not settings.api_key:
@@ -149,9 +168,11 @@ def template_with_sender_id(*args, **kwargs):
     kwargs['sender_id'] = settings.sender_id
     return template(*args, **kwargs)
 
+
 @post('/chat/subscribe')
 def register_chat():
     return register(RegistrationType.CHAT)
+
 
 def register(type):
     """XHR adding a registration ID to our list."""
@@ -180,6 +201,7 @@ def register(type):
     response.status = 201
     return ""
 
+
 @post('/chat/clear-registrations')
 def clear_chat_registrations():
     ndb.delete_multi(
@@ -189,6 +211,7 @@ def clear_chat_registrations():
             Registration.query(Registration.type == RegistrationType.CHAT_STALE)
                         .fetch(keys_only=True))
     return ""
+
 
 @post('/chat/send')
 def send_chat():
@@ -220,6 +243,7 @@ https://github.com/jakearchibald/push-api-appengine-demo""")
     message.put()
 
     return send(RegistrationType.CHAT, sender_and_message, recipients)
+
 
 def send(type, data, recipients=[]):
     """XHR requesting that we send a push message to all users, or the specified
@@ -260,6 +284,7 @@ class SendStats:
     total_count = 0
     text = ""
 
+
 def sendFirefox(type, data, recipients):
     if recipients:
         ndb_query = Registration.query(
@@ -289,6 +314,7 @@ def sendFirefox(type, data, recipients):
                                                            result.content))
         # TODO: Deal with stale connections.
     return stats
+
 
 def sendGCM(type, data, recipients):
     if recipients:
@@ -357,6 +383,7 @@ def sendGCM(type, data, recipients):
     ndb.put_multi(stale_registrations)
 
     return stats
+
 
 def parse_chat_message(sender_and_message):
     try:

@@ -3,3 +3,6 @@
 lib/
 !lib/README.md
 .DS_Store
+node_modules
+static/css
+static/js

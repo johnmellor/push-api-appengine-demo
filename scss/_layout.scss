@@ -1,0 +1,11 @@
+.layout {
+  display: flex;
+  height: 100%;
+  flex-flow: column;
+}
+
+.chat-content {
+  flex: 1;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
