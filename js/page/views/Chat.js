@@ -22,22 +22,43 @@ export default class Chat {
     }
   }
 
+  _createElement(message) {
+    const data = Object.create(message);
+    data.readableDate = dateFormat(message.date, 'mmm d HH:MM');
+    data.date = data.date.toISOString();
+    return this.range.createContextualFragment(chatItem(data));
+  }
+
   addMessages(messages) {
-    messages = messages.map(m => {
-      const message = Object.create(m);
-      message.readableDate = dateFormat(message.date, 'mmm d HH:MM');
-      return message;
+    messages.forEach(message => {
+      this.timeline.appendChild(this._createElement(message));
     });
-
-    const frag = this.range.createContextualFragment(
-      messages.map(m => chatItem(m)).join("")
-    );
-
-    this.timeline.appendChild(frag);
   }
 
   addMessage(message) {
     return this.addMessages([message]);
+  }
+
+  mergeMessages(messages) {
+    const times = Array.from(this.timeline.querySelectorAll('time')).map(t => new Date(t.getAttribute('datetime')));
+    let messageIndex = 0;
+    let message = messages[messageIndex];
+    if (!message) return;
+
+    for (let i = 0; i < times.length; i++) {
+      let time = times[i];
+      let el = this.timeline.children[i];
+
+      while (message.date.valueOf() <= time.valueOf()) {
+        if (message.id !== Number(el.getAttribute('data-id'))) {
+          this.timeline.insertBefore(this._createElement(message), el);
+        }
+        message = messages[++messageIndex];
+        if (!message) return;
+      }
+    }
+
+    this.addMessages(messages.slice(messageIndex));
   }
 
   markSent(id, {newId, newDate}) {

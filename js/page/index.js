@@ -2,6 +2,7 @@ import "babelify/node_modules/babel-core/node_modules/regenerator/runtime";
 import ChatView from "./views/Chat";
 import GlobalWarningView from "./views/GlobalWarning";
 import MessageInputView from "./views/MessageInput";
+import * as chatStore from "../chatStore";
 
 const $ = document.querySelector.bind(document);
 
@@ -23,21 +24,23 @@ class MainController {
     this.messageInputView.on('sendmessage', ({message}) => this.onSend(message));
 
     // init
-    this.fetchMessages();
+    this.displayMessages();
   }
 
   async onSend(message) {
     this.messageInputView.resetInput();
     const tempId = Date.now() + Math.random();
-
-    this.chatView.addMessage({
+    const newMessage = {
       userId,
       text: message,
       date: new Date(),
       fromCurrentUser: true,
       sending: true,
       id: tempId,
-    });
+    }
+
+    await chatStore.addToOutbox(newMessage);
+    this.chatView.addMessage(newMessage);
     
     const data = new FormData();
     data.set('message', message);
@@ -60,20 +63,24 @@ class MainController {
     });
   }
 
-  async fetchMessages() {
-    const data = await fetch('/messages.json', {
+  async displayMessages() {
+    const dataPromise = fetch('/messages.json', {
       credentials: 'include'
     }).then(r => r.json());
 
-    this.chatView.addMessages(
-      data.messages.map(m => ({
-        text: m.text,
-        date: new Date(m.date),
-        userId: m.user,
-        id: m.id,
-        fromCurrentUser: m.user === userId
-      }))
-    );
+    const cachedMessages = await chatStore.getChatMessages();
+    this.chatView.addMessages(cachedMessages);
+
+    const messages = (await dataPromise).messages.map(m => ({
+      text: m.text,
+      date: new Date(m.date),
+      userId: m.user,
+      id: m.id,
+      fromCurrentUser: m.user === userId
+    }));
+
+    chatStore.setChatMessages(messages);
+    this.chatView.mergeMessages(messages);
   }
 
   registerServiceWorker() {
