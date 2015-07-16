@@ -28,8 +28,10 @@ function openDb() {
     const request = indexedDB.open("push-chat", 1);
     request.onupgradeneeded = _ => {
       const db = request.result;
-      db.createObjectStore('outbox', {keyPath: 'id'});
-      db.createObjectStore('chat', {keyPath: 'id'});
+      var outbox = db.createObjectStore('outbox', {keyPath: 'id'});
+      outbox.createIndex('by-date', 'date');
+      var chat = db.createObjectStore('chat', {keyPath: 'id'});
+      chat.createIndex('by-date', 'date');
       db.createObjectStore('keyval');
     };
     request.onerror = _ => reject(request.error);
@@ -39,7 +41,13 @@ function openDb() {
 
 export function addToOutbox(message) {
   return tx('outbox', 'readwrite', transaction => {
-    transaction.objectStore('outbox').outbox.add(message);
+    transaction.objectStore('outbox').add(message);
+  });
+}
+
+export function removeFromOutbox(id) {
+  return tx('outbox', 'readwrite', transaction => {
+    transaction.objectStore('outbox').delete(id);
   });
 }
 
@@ -51,8 +59,19 @@ export function setChatMessages(messages) {
   });
 }
 
+export function addChatMessage(message) {
+  return addChatMessages([message]);
+}
+
+export function addChatMessages(messages) {
+  return tx('chat', 'readwrite', transaction => {
+    const chat = transaction.objectStore('chat');
+    messages.forEach(m => chat.put(m));
+  });
+}
+
 export function getChatMessages() {
   return tx('chat', 'readonly', transaction => {
-    return transaction.objectStore('chat').getAll();
+    return transaction.objectStore('chat').index('by-date').getAll();
   });
 }

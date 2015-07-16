@@ -237,9 +237,10 @@ message goes to many devices.""")
     push_send_message = send(RegistrationType.CHAT, message)
 
     return {
-        "message": push_send_message,
-        "id": message.key.id(),
-        "date": message.creation_date.isoformat()
+        "text": message.text,
+        "user": message.user,
+        "date": message.creation_date.isoformat(),
+        "id": message.key.id()
     }
 
 

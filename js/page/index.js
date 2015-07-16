@@ -6,6 +6,16 @@ import * as chatStore from "../chatStore";
 
 const $ = document.querySelector.bind(document);
 
+function toMessageObj(serverMessageObj) {
+  return {
+    text: serverMessageObj.text,
+    date: new Date(serverMessageObj.date),
+    userId: serverMessageObj.user,
+    id: serverMessageObj.id,
+    fromCurrentUser: serverMessageObj.user === userId
+  };
+}
+
 class MainController {
   constructor() {
     this.chatView = new ChatView($('.chat-content'));
@@ -51,15 +61,19 @@ class MainController {
       credentials: 'include'
     });
 
+    chatStore.removeFromOutbox(tempId);
+
     if (!response.ok) {
       this.chatView.markFailed(tempId);
       return;
     }
 
-    const responseData = await response.json();
+    const sentMessage = toMessageObj(await response.json());
+    chatStore.addChatMessage(sentMessage);
+
     this.chatView.markSent(tempId, {
-      newId: responseData.id,
-      newDate: new Date(responseData.date)
+      newId: sentMessage.id,
+      newDate: sentMessage.date
     });
   }
 
@@ -71,13 +85,7 @@ class MainController {
     const cachedMessages = await chatStore.getChatMessages();
     this.chatView.addMessages(cachedMessages);
 
-    const messages = (await dataPromise).messages.map(m => ({
-      text: m.text,
-      date: new Date(m.date),
-      userId: m.user,
-      id: m.id,
-      fromCurrentUser: m.user === userId
-    }));
+    const messages = (await dataPromise).messages.map(m => toMessageObj(m));
 
     chatStore.setChatMessages(messages);
     this.chatView.mergeMessages(messages);
