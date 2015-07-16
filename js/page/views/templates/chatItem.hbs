@@ -1,7 +1,10 @@
-<li class="chat-item{{#if fromCurrentUser}} to-you{{/if}}" data-id="{{id}}">
+<li class="chat-item{{#if fromCurrentUser}} from-me{{/if}}{{#if sending}} sending{{/if}}" data-id="{{id}}">
   <img class="avatar" width="40" height="40" src="https://www.gravatar.com/avatar/{{userId}}?d=retro&amp;s=40" srcset="https://www.gravatar.com/avatar/{{userId}}?d=retro&amp;s=80 2x, https://www.gravatar.com/avatar/{{userId}}?d=retro&amp;s=120 3x" alt="User">
   <div class="bubble">
     <p>{{text}}</p>
-    <time class="posted-date" datetime="{{date}}">{{readableDate}}</time>
+    <div class="meta">
+      <div class="state">Sending</div>
+      <time class="posted-date" datetime="{{date}}">{{readableDate}}</time>
+    </div>
   </div>
 </li>

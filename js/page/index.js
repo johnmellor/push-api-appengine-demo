@@ -28,8 +28,16 @@ class MainController {
 
   async onSend(message) {
     this.messageInputView.resetInput();
+    const tempId = Date.now() + Math.random();
 
-    // TODO: add chat to UI
+    this.chatView.addMessage({
+      userId,
+      text: message,
+      date: new Date(),
+      fromCurrentUser: true,
+      sending: true,
+      id: tempId,
+    });
     
     const data = new FormData();
     data.set('message', message);
@@ -41,13 +49,15 @@ class MainController {
     });
 
     if (!response.ok) {
-      // TODO
+      this.chatView.markFailed(tempId);
       return;
     }
 
     const responseData = await response.json();
-    console.log(responseData);
-    // TODO get guid and assign message as sent?
+    this.chatView.markSent(tempId, {
+      newId: responseData.id,
+      newDate: new Date(responseData.date)
+    });
   }
 
   async fetchMessages() {

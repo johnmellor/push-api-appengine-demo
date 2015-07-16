@@ -238,7 +238,8 @@ message goes to many devices.""")
 
     return {
         "message": push_send_message,
-        "id": message.key.id()
+        "id": message.key.id(),
+        "date": message.creation_date.isoformat()
     }
 
 

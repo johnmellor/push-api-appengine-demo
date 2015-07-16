@@ -35,4 +35,27 @@ export default class Chat {
 
     this.timeline.appendChild(frag);
   }
+
+  addMessage(message) {
+    return this.addMessages([message]);
+  }
+
+  markSent(id, {newId, newDate}) {
+    const item = this.timeline.querySelector(`.chat-item[data-id='${id}']`);
+    if (!item) throw Error('Message not found');
+
+    item.classList.remove('sending');
+
+    if (newId) item.setAttribute('data-id', newId);
+    if (newDate) {
+      let time = item.querySelector('time');
+      time.setAttribute('datetime', newDate);
+      time.textContent = dateFormat(newDate, 'mmm d HH:MM');
+    }
+  }
+
+  markFailed(id) {
+    const item = this.timeline.querySelector(`.chat-item[data-id='${id}']`);
+    item.querySelector('.state').textContent = 'Sending failed';
+  }
 }

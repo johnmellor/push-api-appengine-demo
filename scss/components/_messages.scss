@@ -32,14 +32,14 @@
       top: 0;
       left: -10px;
     }
-
-    time {
+    
+    .meta {
       font-size: 0.9rem;
       color: #999;
     }
   }
 
-  &.to-you {
+  &.from-me {
     justify-content: flex-end;
 
     & .avatar {
@@ -56,6 +56,19 @@
         border-width: 10px 10px 0 0;
         border-color: #def3d8 transparent transparent transparent;
       }
+    }
+  }
+
+  & .state {
+    display: none;
+  }
+
+  &.sending {
+    & .state {
+      display: block;
+    }
+    & time {
+      display: none;
     }
   }
 }
