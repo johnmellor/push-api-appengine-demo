@@ -2,37 +2,44 @@ import chatItem from "./templates/chatItem.hbs";
 import dateFormat from "dateformat";
 
 export default class Chat {
-  constructor(container) {
+  constructor(container, currentUserId) {
     this.container = container;
     this.timeline = container.querySelector('.chat-timeline');
+    this.currentUserId = currentUserId;
     this.range = document.createRange();
     this.range.setStart(this.timeline, 0);
   }
 
-  async _scrollToBottom({
-    instant = true
+  async _performScroll({
+    instant = false
   }={}) {
     if (document.fonts) await document.fonts.ready;
     const topPos = this.container.scrollHeight;
     if (instant) {
-      this.container.scrollTop = topPos;
+      this.container.style.scrollBehavior = 'auto';
     }
-    else {
-      this.container.scrollTo(0, topPos);
-    }
+    this.container.scrollTop = topPos;
+    this.container.style.scrollBehavior = '';
   }
 
   _createElement(message) {
     const data = Object.create(message);
     data.readableDate = dateFormat(message.date, 'mmm d HH:MM');
     data.date = data.date.toISOString();
+    data.fromCurrentUser = (data.userId === this.currentUserId);
     return this.range.createContextualFragment(chatItem(data));
   }
 
   addMessages(messages) {
+    const shouldScroll = (this.container.scrollTop + this.container.offsetHeight == this.container.scrollHeight);
+    const shouldScrollInstantly = this.timeline.children.length === 0;
     messages.forEach(message => {
       this.timeline.appendChild(this._createElement(message));
     });
+
+    if (shouldScroll) {
+      this._performScroll({instant: shouldScrollInstantly});
+    }
   }
 
   addMessage(message) {

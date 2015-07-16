@@ -3,22 +3,13 @@ import ChatView from "./views/Chat";
 import GlobalWarningView from "./views/GlobalWarning";
 import MessageInputView from "./views/MessageInput";
 import * as chatStore from "../chatStore";
+import toMessageObj from "../toMessageObj";
 
 const $ = document.querySelector.bind(document);
 
-function toMessageObj(serverMessageObj) {
-  return {
-    text: serverMessageObj.text,
-    date: new Date(serverMessageObj.date),
-    userId: serverMessageObj.user,
-    id: serverMessageObj.id,
-    fromCurrentUser: serverMessageObj.user === userId
-  };
-}
-
 class MainController {
   constructor() {
-    this.chatView = new ChatView($('.chat-content'));
+    this.chatView = new ChatView($('.chat-content'), userId);
     this.globalWarningView = new GlobalWarningView($('.global-warning'));
     this.messageInputView = new MessageInputView($('.message-form'));
     this.logoutEl = $('.logout');
@@ -31,10 +22,26 @@ class MainController {
       this.logout();
     });
 
+    window.addEventListener('message', event => { // non-standard Chrome behaviour
+      if (event.origin && event.origin != location.origin) return;
+      this.onServiceWorkerMessage(event.data);
+    }); 
+    navigator.serviceWorker.addEventListener("message", event => this.onServiceWorkerMessage(event.data));
+
     this.messageInputView.on('sendmessage', ({message}) => this.onSend(message));
 
     // init
     this.displayMessages();
+  }
+
+  async onServiceWorkerMessage(message) {
+    if (message == 'updateMessages') {
+      await this.mergeCachedMessages();
+    }
+  }
+
+  async mergeCachedMessages() {
+    this.chatView.mergeMessages(await chatStore.getChatMessages());
   }
 
   async onSend(message) {
@@ -44,7 +51,6 @@ class MainController {
       userId,
       text: message,
       date: new Date(),
-      fromCurrentUser: true,
       sending: true,
       id: tempId,
     }
@@ -82,9 +88,7 @@ class MainController {
       credentials: 'include'
     }).then(r => r.json());
 
-    const cachedMessages = await chatStore.getChatMessages();
-    this.chatView.addMessages(cachedMessages);
-
+    await this.mergeCachedMessages();
     const messages = (await dataPromise).messages.map(m => toMessageObj(m));
 
     chatStore.setChatMessages(messages);
@@ -112,7 +116,7 @@ class MainController {
       pushSub = await reg.pushManager.subscribe({userVisibleOnly: true});
     }
     catch (err) {
-      this.globalWarningView.warn("Push subscription failed.");
+      console.warn("Push subscription failed.");
       throw err;
     }
 

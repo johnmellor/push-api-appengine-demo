@@ -1,44 +1,46 @@
-"use strict";
-/*
-importScripts("/static/localforage.js");
-importScripts("/static/cache-polyfill.js");
+import "babelify/node_modules/babel-core/node_modules/regenerator/runtime";
+import "serviceworker-cache-polyfill";
+import * as chatStore from "../chatStore";
+import toMessageObj from "../toMessageObj";
 
-self.addEventListener("install", function(event) {
-  console.log("SW oninstall");
+self.addEventListener("install", event => {
   self.skipWaiting();
 
   event.waitUntil(
-    caches.open('chat-static-v1').then(function(cache) {
-      return cache.addAll([
-        '/chat/',
-        '/static/hamburger.svg',
-        '/static/hangouts.png',
-        '/static/localforage.js',
-        '/static/cat.png',
-        '/static/chat.png',
-        '/static/send.png',
-        '/static/roboto.css',
-        '/static/roboto.woff'
-      ]);
+    caches.open('chat-static-v2').then(cache => {
+      return cache.addAll(
+        [
+          '/',
+          '/static/css/app.css',
+          '/static/fonts/roboto.woff',
+          '/static/js/page.js',
+          '/static/imgs/cat.png',
+          '/static/imgs/hangouts.png'
+        ].map(u => new Request(u, {credentials: 'include'}))
+      );
     })
   );
 });
 
-self.addEventListener("activate", function(event) {
-  console.log("SW onactivate");
-  if (clients.claim) clients.claim();
+const cachesToKeep = ['chat-static-v2'];
+
+self.addEventListener('activate', event => {
+  clients.claim();
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames
+          .filter(n => cachesToKeep.indexOf(n) === -1)
+          .map(name => caches.delete(name))
+      );
+    })
+  );
 });
 
-self.addEventListener('fetch', function(event) {
-  var request = event.request;
-  var url = new URL(request.url);
+self.addEventListener('fetch', event => {
+  const request = event.request;
 
   if (request.method != 'GET') return;
-
-  if (url.origin == location.origin && url.pathname == '/') {
-    event.respondWith(Response.redirect('/chat/'));
-    return;
-  }
 
   event.respondWith(
     caches.match(request).then(function(response) {
@@ -47,44 +49,40 @@ self.addEventListener('fetch', function(event) {
   );
 });
 
-self.addEventListener('push', function(event) {
+self.addEventListener('push', event => {
   event.waitUntil(
-    fetch("/chat/messages").then(function(response) {
-      return response.text();
-    }).then(function(messages) {
-      console.log("SW onpush", messages);
+    fetch("/messages.json", {
+      credentials: "include"
+    }).then(async response => {
+      const messages = (await response.json()).messages.map(m => toMessageObj(m));
+      await chatStore.setChatMessages(messages);
+      broadcast('updateMessages');
 
-      var usernameAndMessage = messages.split('\n').pop();
-
-      var messageIsBlank = /^[^:]*: $/.test(usernameAndMessage);
-      if (messageIsBlank) {
-        messages += "<empty message, so no notification shown>";
-      }
-
-      // Store incoming messages (clients will read this by polling).
-      var savePromise = localforage.setItem('messages', messages);
-
-      if (messageIsBlank) {
-        return savePromise;
-      }
-
-      var notifyPromise;
-
-      return clients.matchAll().then(function(clients) {
-        for (var client of clients) {
-          if (client.visibilityState == 'visible' && new URL(client.url).pathname == '/chat/') {
-            return savePromise;
-          }
+      for (var client of (await clients.matchAll())) {
+        if (client.visibilityState == 'visible' && new URL(client.url).pathname == '/') {
+          return;
         }
+      }
 
-        return Promise.all([
-          savePromise,
-          showNotification(usernameAndMessage)
-        ])
+      const notificationMessage = messages[messages.length - 1];
+
+      return self.registration.showNotification("New Chat!", {
+        body: notificationMessage.text,
+        tag: 'chat',
+        icon: `https://www.gravatar.com/avatar/${notificationMessage.userId}?d=retro&amp;s=80`
       });
     })
   );
 });
+
+function broadcast(message) {
+  return clients.matchAll().then(function(clients) {
+    for (var client of clients) {
+      client.postMessage(message);
+    }
+  });
+}
+/*
 
 self.addEventListener('sync', function(event) {
   // There are a lot of race conditions with the outbox.
