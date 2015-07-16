@@ -38,6 +38,15 @@ class MainController {
     if (message == 'updateMessages') {
       await this.mergeCachedMessages();
     }
+    else if ('messageSent' in message) {
+      this.chatView.markSent(message.messageSent, {
+        newId: message.message.id,
+        newDate: message.message.date
+      });
+    }
+    else if ('sendFailed' in message) {
+      this.chatView.markFailed(message.sendFailed);
+    }
   }
 
   async mergeCachedMessages() {
@@ -53,14 +62,17 @@ class MainController {
       date: new Date(),
       sending: true,
       id: tempId,
-    }
+    };
 
     await chatStore.addToOutbox(newMessage);
     this.chatView.addMessage(newMessage);
     
-    const data = new FormData();
-    data.set('message', message);
+    const reg = await this.serviceWorkerReg;
+    reg.active.postMessage('postOutbox');
 
+    /*const data = new FormData();
+    data.set('message', message);*/
+    /*
     const response = await fetch('/send', {
       method: 'POST',
       body: data,
@@ -80,7 +92,7 @@ class MainController {
     this.chatView.markSent(tempId, {
       newId: sentMessage.id,
       newDate: sentMessage.date
-    });
+    });*/
   }
 
   async displayMessages() {
@@ -89,6 +101,7 @@ class MainController {
     }).then(r => r.json());
 
     await this.mergeCachedMessages();
+    this.chatView.mergeMessages(await chatStore.getOutbox());
     const messages = (await dataPromise).messages.map(m => toMessageObj(m));
 
     chatStore.setChatMessages(messages);

@@ -97,6 +97,53 @@ self.addEventListener('notificationclick', event => {
       })
     );
 });
+
+async function postOutbox() {
+  let message;
+  while (message = await chatStore.getFirstOutboxItem()) {
+    let data = new FormData();
+    data.set('message', message.text);
+    const pushSub = await self.registration.pushManager.getSubscription();
+
+    if (pushSub) {
+      let endpoint = pushSub.endpoint;
+      if ('subscriptionId' in pushSub && !endpoint.includes(pushSub.subscriptionId)) {
+        endpoint += "/" + pushSub.subscriptionId;
+      }
+      data.set('push_endpoint', endpoint);
+    }
+
+    let response = await fetch('/send', {
+      method: 'POST',
+      body: data,
+      credentials: 'include'
+    });
+
+    await chatStore.removeFromOutbox(message.id);
+
+    if (!response.ok) {
+      broadcast({
+        sendFailed: message.id
+      });
+      continue;
+    }
+
+    let sentMessage = toMessageObj(await response.json());
+    chatStore.addChatMessage(sentMessage);
+
+    broadcast({
+      messageSent: message.id,
+      message: sentMessage
+    });
+  }
+}
+
+self.addEventListener('message', event => {
+  if (event.data == 'postOutbox') {
+    postOutbox();
+  }
+});
+
 /*
 
 self.addEventListener('sync', function(event) {

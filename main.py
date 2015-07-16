@@ -211,6 +211,8 @@ def clear_chat_registrations():
 @post('/send')
 def send_chat():
     message_text = request.forms.message
+    user_endpoint = request.forms.push_endpoint
+
     sender = get_user_id(users.get_current_user())
 
     if message_text == '':
@@ -234,7 +236,7 @@ message goes to many devices.""")
     message.user = sender
     message.put()
 
-    push_send_message = send(RegistrationType.CHAT, message)
+    push_send_message = send(RegistrationType.CHAT, message, user_endpoint)
 
     return {
         "text": message.text,
@@ -244,11 +246,11 @@ message goes to many devices.""")
     }
 
 
-def send(type, data):
+def send(type, data, user_endpoint):
     """XHR requesting that we send a push message to all users"""
 
-    gcm_stats = sendGCM(type, data)
-    firefox_stats = sendFirefox(type, data)
+    gcm_stats = sendGCM(type, data, user_endpoint)
+    firefox_stats = sendFirefox(type, data, user_endpoint)
 
     if gcm_stats.total_count + firefox_stats.total_count \
             != Registration.query(Registration.type == type).count():
@@ -283,7 +285,7 @@ class SendStats:
     text = ""
 
 
-def sendFirefox(type, data):
+def sendFirefox(type, data, user_endpoint):
     ndb_query = Registration.query(
         Registration.type == type,
         Registration.service == PushService.FIREFOX)
@@ -296,6 +298,9 @@ def sendFirefox(type, data):
         return stats
 
     for endpoint in push_endpoints:
+        if user_endpoint == endpoint:
+            continue
+
         result = urlfetch.fetch(url=endpoint,
                                 payload="",
                                 method=urlfetch.PUT)
@@ -308,7 +313,7 @@ def sendFirefox(type, data):
     return stats
 
 
-def sendGCM(type, data):
+def sendGCM(type, data, user_endpoint):
 
     ndb_query = Registration.query(Registration.type == type,
                                    Registration.service == PushService.GCM)
@@ -319,6 +324,9 @@ def sendGCM(type, data):
     stats.total_count = len(registration_ids)
     if not registration_ids:
         return stats
+
+    # filter out user_endpoint
+    registration_ids = [reg_id for reg_id in registration_ids if user_endpoint.rfind(reg_id) + len(reg_id) != len(user_endpoint)]
 
     # TODO: Should limit batches to 1000 registration_ids at a time.
     post_data = json.dumps({

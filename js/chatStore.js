@@ -51,6 +51,19 @@ export function removeFromOutbox(id) {
   });
 }
 
+export function getFirstOutboxItem() {
+  return tx('outbox', 'readonly', transaction => {
+    return transaction.objectStore('outbox').index('by-date').get(IDBKeyRange.lowerBound(new Date(0)));
+  });
+}
+
+export function getOutbox() {
+  return tx('outbox', 'readonly', transaction => {
+    return transaction.objectStore('outbox').index('by-date').getAll();
+  });
+}
+
+
 export function setChatMessages(messages) {
   return tx('chat', 'readwrite', transaction => {
     const chat = transaction.objectStore('chat');
