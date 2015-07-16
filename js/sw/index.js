@@ -1,5 +1,5 @@
 "use strict";
-
+/*
 importScripts("/static/localforage.js");
 importScripts("/static/cache-polyfill.js");
 
@@ -204,3 +204,4 @@ self.addEventListener('notificationclick', function(event) {
 });
 
 console.log('Logged from inside SW');
+*/

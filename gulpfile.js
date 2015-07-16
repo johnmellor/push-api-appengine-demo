@@ -8,6 +8,7 @@ var mergeStream = require('merge-stream');
 var source = require('vinyl-source-stream');
 var buffer = require('vinyl-buffer');
 var babelify = require('babelify');
+var hbsfy = require('hbsfy');
 
 gulp.task('clean', function (done) {
   require('del')(['static/js', 'static/css'], done);
@@ -38,7 +39,7 @@ function createBundler(src) {
     stage: 1
   }));
 
-  //b.transform(hbsfy);
+  b.transform(hbsfy);
 
   if (plugins.util.env.production) {
     b.transform({

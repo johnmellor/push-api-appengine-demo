@@ -56,9 +56,15 @@ class Registration(ndb.Model):
 class Message(ndb.Model):
     creation_date = ndb.DateTimeProperty(auto_now_add=True)
     text = ndb.StringProperty(indexed=False)
+    user = ndb.StringProperty(indexed=False)
 
 def thread_key(thread_name='default_thread'):
     return ndb.Key('Thread', thread_name)
+
+
+def get_user_id(user):
+    return hashlib.md5(user.email()).hexdigest();
+
 
 @route('/setup', method=['GET', 'POST'])
 def setup():
@@ -96,6 +102,7 @@ def setup():
 
 @get('/manifest.json')
 def manifest():
+    # TODO: get bigger icon
     return {
         "short_name": "Chat App",
         "name": "Chat App",
@@ -112,48 +119,36 @@ def manifest():
 
 
 @get('/')
-def root_redirect():
-    redirect("/chat/")
-
-
-@get('/chat')
-def chat_redirect():
-    redirect("/chat/")
-
-
-@get('/chat/')
-def chat():
+def root():
     """Single page chat app."""
-    user = users.get_current_user()
-    email_hash = hashlib.md5(user.email()).hexdigest()
-    logout_url = users.create_logout_url('/chat/')
-
-    
     return template_with_sender_id(
         'chat',
-        user_from_get=request.query.get('user') or '',
-        email_hash=email_hash,
-        logout_url=logout_url
+        user_id=get_user_id(users.get_current_user()),
+        logout_url=users.create_logout_url('/')
     )
 
 
-@get('/chat/messages')
+@get('/messages.json')
 def chat_messages():
     """XHR to fetch the most recent chat messages."""
     messages = reversed(Message.query(ancestor=thread_key())
                                .order(-Message.creation_date).fetch(20))
-    return "\n".join(re.sub(r'\r\n|\r|\n', ' ', cgi.escape(m.text))
-                     for m in messages)
+    return {
+        "messages": [{
+            "text": message.text,
+            "user": message.user,
+            "date": message.creation_date.isoformat(),
+            "id": message.key.id()
+        } for message in messages]
+    }
+    return response
 
 
 @get('/admin')
-def legacy_chat_admin_redirect():
-    redirect("/chat/admin")
-
-
-@get('/chat/admin')
 def chat_admin():
     """Lets "admins" clear chat registrations."""
+    if not users.is_current_user_admin():
+        abort(401, "Sorry, only administrators can access this page.")
     # Despite the name, this route has no credential checks - don't put anything
     # sensitive here!
     # This template doesn't actually use the sender_id, but we want the warning.
@@ -169,7 +164,7 @@ def template_with_sender_id(*args, **kwargs):
     return template(*args, **kwargs)
 
 
-@post('/chat/subscribe')
+@post('/subscribe')
 def register_chat():
     return register(RegistrationType.CHAT)
 
@@ -194,16 +189,16 @@ def register(type):
                                                   type=type,
                                                   service=PushService.FIREFOX)
 
-    if request.forms.username:
-        registration.username = request.forms.username
-
+    registration.username = get_user_id(users.get_current_user())
     registration.put()
     response.status = 201
     return ""
 
 
-@post('/chat/clear-registrations')
+@post('/clear-registrations')
 def clear_chat_registrations():
+    if not users.is_current_user_admin():
+        abort(401, "Sorry, only administrators can access this page.")
     ndb.delete_multi(
             Registration.query(Registration.type == RegistrationType.CHAT)
                         .fetch(keys_only=True))
@@ -213,44 +208,45 @@ def clear_chat_registrations():
     return ""
 
 
-@post('/chat/send')
+@post('/send')
 def send_chat():
-    sender_and_message = request.forms.message
-    sender, recipients, message_text = parse_chat_message(sender_and_message)
+    message_text = request.forms.message
+    sender = get_user_id(users.get_current_user())
 
-    if not recipients:
-        settings = GcmSettings.singleton()
-        if (settings.spam_regex
-                and re.search(settings.spam_regex, sender_and_message)):
-            # Spam only sends a push message to the sender.
-            sender_and_message += " @" + sender
-            recipients = [sender]
-        else:
-            last_message = Message.query(ancestor=thread_key()) \
-                                  .order(-Message.creation_date).get()
-            if last_message and last_message.text == sender_and_message:
-                abort(400, """
+    if message_text == '':
+        abort(400, "Empty message")
+
+    settings = GcmSettings.singleton()
+    if (settings.spam_regex
+            and re.search(settings.spam_regex, message_text)):
+        abort(400, "Spam")
+    else:
+        last_message = Message.query(ancestor=thread_key()) \
+                              .order(-Message.creation_date).get()
+        if last_message and last_message.text == message_text:
+            abort(400, """
 Please don't send the same message twice in a row - each
-message goes to many devices. If you need to send a lot of
-messages for testing, then send them only to specific users
-by including one or more @username in your message, or run
-your own test server using the source code at
-https://github.com/jakearchibald/push-api-appengine-demo""")
+message goes to many devices.""")
 
     # Store message
     message = Message(parent=thread_key())
-    message.text = sender_and_message
+    message.text = message_text
+    message.user = sender
     message.put()
 
-    return send(RegistrationType.CHAT, sender_and_message, recipients)
+    push_send_message = send(RegistrationType.CHAT, message)
+
+    return {
+        "message": push_send_message,
+        "id": message.key.id()
+    }
 
 
-def send(type, data, recipients=[]):
-    """XHR requesting that we send a push message to all users, or the specified
-    recipients."""
+def send(type, data):
+    """XHR requesting that we send a push message to all users"""
 
-    gcm_stats = sendGCM(type, data, recipients)
-    firefox_stats = sendFirefox(type, data, recipients)
+    gcm_stats = sendGCM(type, data)
+    firefox_stats = sendFirefox(type, data)
 
     if gcm_stats.total_count + firefox_stats.total_count \
             != Registration.query(Registration.type == type).count():
@@ -285,16 +281,10 @@ class SendStats:
     text = ""
 
 
-def sendFirefox(type, data, recipients):
-    if recipients:
-        ndb_query = Registration.query(
-            Registration.type == type,
-            Registration.service == PushService.FIREFOX,
-            Registration.username.IN(recipients))
-    else:
-        ndb_query = Registration.query(
-            Registration.type == type,
-            Registration.service == PushService.FIREFOX)
+def sendFirefox(type, data):
+    ndb_query = Registration.query(
+        Registration.type == type,
+        Registration.service == PushService.FIREFOX)
     firefox_registration_keys = ndb_query.fetch(keys_only=True)
     push_endpoints = [key.string_id() for key in firefox_registration_keys]
 
@@ -316,14 +306,10 @@ def sendFirefox(type, data, recipients):
     return stats
 
 
-def sendGCM(type, data, recipients):
-    if recipients:
-        ndb_query = Registration.query(Registration.type == type,
-                                       Registration.service == PushService.GCM,
-                                       Registration.username.IN(recipients))
-    else:
-        ndb_query = Registration.query(Registration.type == type,
-                                       Registration.service == PushService.GCM)
+def sendGCM(type, data):
+
+    ndb_query = Registration.query(Registration.type == type,
+                                   Registration.service == PushService.GCM)
     gcm_registration_keys = ndb_query.fetch(keys_only=True)
     registration_ids = [key.string_id() for key in gcm_registration_keys]
 
@@ -383,19 +369,6 @@ def sendGCM(type, data, recipients):
     ndb.put_multi(stale_registrations)
 
     return stats
-
-
-def parse_chat_message(sender_and_message):
-    try:
-        sender, message_text = re.split(r': ', sender_and_message, maxsplit=1)
-    except ValueError:
-        sender = ""
-        message_text = sender_and_message
-
-    # If @mentions are present, only deliver to those users.
-    recipients = re.findall(r'(?<!\S)@(\S+)', message_text)
-
-    return sender, recipients, message_text
 
 
 bottle.run(server='gae', debug=True)

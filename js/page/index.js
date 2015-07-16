@@ -1,42 +1,120 @@
-// This code is hacky. Please don't learn anything from it.
+import "babelify/node_modules/babel-core/node_modules/regenerator/runtime";
+import ChatView from "./views/Chat";
+import GlobalWarningView from "./views/GlobalWarning";
+import MessageInputView from "./views/MessageInput";
 
-(function() {
-  var supports = (function() {
-    var hasPush = !!window.PushManager;
-    var hasNotification = 'ServiceWorkerRegistration' in window &&
-      'showNotification' in ServiceWorkerRegistration.prototype;
-    var hasServiceWorker = 'serviceWorker' in navigator;
-    var supportsPush = hasPush && hasNotification && hasServiceWorker;
-    var missingMessage = '';
+const $ = document.querySelector.bind(document);
 
-    if (!supportsPush) {
-      if (!hasPush || !hasServiceWorker) {
-        missingMessage = "Your browser does not support "
-          + (hasPush ? "ServiceWorker" : hasServiceWorker ? "push messaging" : "push messaging or ServiceWorker")
-          + "; you won't be able to receive messages.";
-      } else if (!hasNotification) {
-        missingMessage = "Your browser doesn't support showing notifications from a Service Worker; you won't be able to receive messages when the page is not open";
-      }
-    }
+class MainController {
+  constructor() {
+    this.chatView = new ChatView($('.chat-content'));
+    this.globalWarningView = new GlobalWarningView($('.global-warning'));
+    this.messageInputView = new MessageInputView($('.message-form'));
+    this.logoutEl = $('.logout');
+    this.serviceWorkerReg = this.registerServiceWorker();
+    this.pushSubscription = this.registerPush();
+
+    // events
+    this.logoutEl.addEventListener('click', event => {
+      event.preventDefault();
+      this.logout();
+    });
+
+    this.messageInputView.on('sendmessage', ({message}) => this.onSend(message));
+
+    // init
+    this.fetchMessages();
+  }
+
+  async onSend(message) {
+    this.messageInputView.resetInput();
+
+    // TODO: add chat to UI
     
-    return {
-      supportsPush: supportsPush,
-      missingMessage: missingMessage
-    };
-  }());
+    const data = new FormData();
+    data.set('message', message);
 
-  var $ = document.querySelector.bind(document);
-  var usernamePromise = localforage.getItem('username');
-  var swRegisterPromise = navigator.serviceWorker.register('/chat/sw.js');
-  
-  swRegisterPromise.then(function(reg) {
-    if (!reg.active) {
-      // This is a fresh registration
-      // Remove existing username details
-      return localforage.removeItem('username').then(function() {
-        return null;
-      });
+    const response = await fetch('/send', {
+      method: 'POST',
+      body: data,
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      // TODO
+      return;
     }
-    return usernamePromise;
-  });
-}());
+
+    const responseData = await response.json();
+    console.log(responseData);
+    // TODO get guid and assign message as sent?
+  }
+
+  async fetchMessages() {
+    const data = await fetch('/messages.json', {
+      credentials: 'include'
+    }).then(r => r.json());
+
+    this.chatView.addMessages(
+      data.messages.map(m => ({
+        text: m.text,
+        date: new Date(m.date),
+        userId: m.user,
+        id: m.id,
+        fromCurrentUser: m.user === userId
+      }))
+    );
+  }
+
+  registerServiceWorker() {
+    if (!navigator.serviceWorker) {
+      this.globalWarningView.warn("Your browser doesn't support service workers, so this isn't going to work.");
+      return Promise.reject(Error("Service worker not supported"));
+    }
+    return navigator.serviceWorker.register('/sw.js');
+  }
+
+  async registerPush() {
+    const reg = await navigator.serviceWorker.ready;
+    if (!reg.pushManager) {
+      this.globalWarningView.warn("Your browser doesn't support service workers, so this isn't going to work.");
+      throw Error("Push messaging not supported");
+    }
+
+    let pushSub;
+
+    try {
+      pushSub = await reg.pushManager.subscribe({userVisibleOnly: true});
+    }
+    catch (err) {
+      this.globalWarningView.warn("Push subscription failed.");
+      throw err;
+    }
+
+    // The API was updated to only return an |endpoint|, but Chrome
+    // 42 and 43 implemented the older API which provides a separate
+    // subscriptionId. Concatenate them for backwards compatibility.
+    let endpoint = pushSub.endpoint;
+    if ('subscriptionId' in pushSub && !endpoint.includes(pushSub.subscriptionId)) {
+      endpoint += "/" + pushSub.subscriptionId;
+    }
+
+    const data = new FormData();
+    data.append('endpoint', endpoint);
+
+    await fetch('/subscribe', {
+      body: data,
+      credentials: 'include',
+      method: 'POST'
+    });
+  }
+
+  async logout() {
+    const reg = await navigator.serviceWorker.getRegistration('/');
+    if (reg) await reg.unregister();
+    // TODO: clear data
+    window.location.href = this.logoutEl.href;
+  }
+}
+
+new MainController();

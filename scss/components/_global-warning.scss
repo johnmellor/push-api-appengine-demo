@@ -1,0 +1,9 @@
+.global-warning {
+  display: none;
+  padding: 10px 16px;
+  background: #F9F99C;
+
+  &.active {
+    display: block;
+  }
+}
