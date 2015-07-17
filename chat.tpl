@@ -2,6 +2,7 @@
 <html><head>
   <title>Chat App</title>
   <meta name="viewport" content="width=device-width, user-scalable=no">
+  <meta name="theme-color" content="#0f9d58">
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" href="/static/imgs/hangouts.png" sizes="42x42">
   <link href="/static/css/app.css" rel="stylesheet">

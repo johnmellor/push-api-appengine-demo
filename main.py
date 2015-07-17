@@ -105,13 +105,21 @@ def manifest():
     return {
         "short_name": "Chat App",
         "name": "Chat App",
-        "icons": [{
-            "src": "/static/hangouts.png",
-            "sizes": "300x300",
-            "type": "image/png"
-        }],
+        "scope": "./",
+        "icons": [
+            {
+                "src": "/static/hangouts.png",
+                "sizes": "300x300",
+                "type": "image/png"
+            },
+            {
+                "src": "/static/hangouts.png",
+                "sizes": "192x192",
+                "type": "image/png"
+            }
+        ],
         "display": "standalone",
-        "start_url": "/chat/",
+        "start_url": "/",
         "gcm_sender_id": GcmSettings.singleton().sender_id,
         "gcm_user_visible_only": True
     }
