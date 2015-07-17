@@ -108,13 +108,8 @@ def manifest():
         "scope": "./",
         "icons": [
             {
-                "src": "/static/hangouts.png",
+                "src": "/static/imgs/hangouts.png",
                 "sizes": "300x300",
-                "type": "image/png"
-            },
-            {
-                "src": "/static/hangouts.png",
-                "sizes": "192x192",
                 "type": "image/png"
             }
         ],
