@@ -14,7 +14,6 @@ self.addEventListener("install", event => {
           '/static/css/app.css',
           '/static/fonts/roboto.woff',
           '/static/js/page.js',
-          '/static/imgs/cat.png',
           '/static/imgs/hangouts.png'
         ].map(u => new Request(u, {credentials: 'include'}))
       );
@@ -84,12 +83,13 @@ function broadcast(message) {
 }
 
 self.addEventListener('notificationclick', event => {
+    const rootUrl = new URL('/', location).href;
     event.notification.close();
     // Enumerate windows, and call window.focus(), or open a new one.
     event.waitUntil(
       clients.matchAll().then(matchedClients => {
         for (let client of matchedClients) {
-          if (client.url === '/') {
+          if (client.url === rootUrl) {
             return client.focus();
           }
         }
