@@ -66,33 +66,15 @@ class MainController {
 
     await chatStore.addToOutbox(newMessage);
     this.chatView.addMessage(newMessage);
-    
+
     const reg = await this.serviceWorkerReg;
-    reg.active.postMessage('postOutbox');
 
-    /*const data = new FormData();
-    data.set('message', message);*/
-    /*
-    const response = await fetch('/send', {
-      method: 'POST',
-      body: data,
-      credentials: 'include'
-    });
-
-    chatStore.removeFromOutbox(tempId);
-
-    if (!response.ok) {
-      this.chatView.markFailed(tempId);
-      return;
+    if (reg.sync) {
+      await reg.sync.register({tag: 'outbox'});
     }
-
-    const sentMessage = toMessageObj(await response.json());
-    chatStore.addChatMessage(sentMessage);
-
-    this.chatView.markSent(tempId, {
-      newId: sentMessage.id,
-      newDate: sentMessage.date
-    });*/
+    else {
+      reg.active.postMessage('postOutbox');
+    }
   }
 
   async displayMessages() {

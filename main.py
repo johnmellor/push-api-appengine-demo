@@ -327,6 +327,7 @@ def sendGCM(type, data, user_endpoint):
 
     # filter out user_endpoint
     registration_ids = [reg_id for reg_id in registration_ids if user_endpoint.rfind(reg_id) + len(reg_id) != len(user_endpoint)]
+    stats.total_count = len(registration_ids)
 
     # TODO: Should limit batches to 1000 registration_ids at a time.
     post_data = json.dumps({
