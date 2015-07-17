@@ -13,14 +13,43 @@ function tx(stores, mode, callback) {
       const transaction = db.transaction(stores, mode);
       const request = callback(transaction);
       
-      if (request) {
+      if (request instanceof IDBRequest) {
         request.onsuccess = _ => resolve(request.result);
+      }
+      else if (request) {
+        resolve(request);
       }
 
       transaction.onerror = _ => reject(transaction.error);
       transaction.oncomplete = _ => resolve(transaction.result);
     });
   });
+}
+
+function iterate(cursorRequest, callback) {
+  return new Promise((resolve, reject) => {
+    cursorRequest.onerror = _ => reject(request.error);
+    cursorRequest.onsuccess = _ => {
+      if (!cursorRequest.result) {
+        resolve();
+        return;
+      } 
+      callback(cursorRequest.result, resolve);
+    };
+  });
+}
+
+function getAll(cursorable) {
+  if ('getAll' in cursorable) {
+    return cursorable.getAll();
+  }
+
+  var items = [];
+
+  return iterate(cursorable.openCursor(), (cursor) => {
+    items.push(cursor.value);
+    cursor.continue();
+  }).then(_ => items);
 }
 
 function openDb() {
@@ -59,7 +88,7 @@ export function getFirstOutboxItem() {
 
 export function getOutbox() {
   return tx('outbox', 'readonly', transaction => {
-    return transaction.objectStore('outbox').index('by-date').getAll();
+    return getAll(transaction.objectStore('outbox').index('by-date'));
   });
 }
 
@@ -85,6 +114,6 @@ export function addChatMessages(messages) {
 
 export function getChatMessages() {
   return tx('chat', 'readonly', transaction => {
-    return transaction.objectStore('chat').index('by-date').getAll();
+    return getAll(transaction.objectStore('chat').index('by-date'));
   });
 }

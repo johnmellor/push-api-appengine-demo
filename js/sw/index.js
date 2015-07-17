@@ -102,7 +102,7 @@ async function postOutbox() {
   let message;
   while (message = await chatStore.getFirstOutboxItem()) {
     let data = new FormData();
-    data.set('message', message.text);
+    data.append('message', message.text);
     const pushSub = await self.registration.pushManager.getSubscription();
 
     if (pushSub) {
@@ -110,7 +110,7 @@ async function postOutbox() {
       if ('subscriptionId' in pushSub && !endpoint.includes(pushSub.subscriptionId)) {
         endpoint += "/" + pushSub.subscriptionId;
       }
-      data.set('push_endpoint', endpoint);
+      data.append('push_endpoint', endpoint);
     }
 
     let response = await fetch('/send', {

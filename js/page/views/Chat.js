@@ -1,5 +1,6 @@
 import chatItem from "./templates/chatItem.hbs";
 import dateFormat from "dateformat";
+import toArray from "../../toArray";
 
 export default class Chat {
   constructor(container, currentUserId) {
@@ -47,7 +48,7 @@ export default class Chat {
   }
 
   mergeMessages(messages) {
-    const times = Array.from(this.timeline.querySelectorAll('time')).map(t => new Date(t.getAttribute('datetime')));
+    const times = toArray(this.timeline.querySelectorAll('time')).map(t => new Date(t.getAttribute('datetime')));
     let messageIndex = 0;
     let message = messages[messageIndex];
     if (!message) return;
