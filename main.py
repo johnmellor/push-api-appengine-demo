@@ -102,13 +102,12 @@ def setup():
 
 @get('/manifest.json')
 def manifest():
-    # TODO: get bigger icon
     return {
         "short_name": "Chat App",
         "name": "Chat App",
         "icons": [{
             "src": "/static/hangouts.png",
-            "sizes": "42x42",
+            "sizes": "300x300",
             "type": "image/png"
         }],
         "display": "standalone",
