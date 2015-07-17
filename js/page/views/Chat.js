@@ -77,7 +77,7 @@ export default class Chat {
     if (newId) item.setAttribute('data-id', newId);
     if (newDate) {
       let time = item.querySelector('time');
-      time.setAttribute('datetime', newDate);
+      time.setAttribute('datetime', newDate.toISOString());
       time.textContent = dateFormat(newDate, 'mmm d HH:MM');
     }
   }
