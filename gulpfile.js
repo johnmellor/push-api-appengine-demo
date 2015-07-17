@@ -95,7 +95,7 @@ gulp.task('watch', ['build'], function () {
 gulp.task('build', ['js', 'css']);
 
 gulp.task('serve', ['watch'], plugins.shell.task([
-  'dev_appserver.py app.yaml'
+  'dev_appserver.py --port=9999 app.yaml'
 ]));
 
 gulp.task('deploy', function() {
