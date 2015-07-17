@@ -29,9 +29,18 @@ class MainController {
     navigator.serviceWorker.addEventListener("message", event => this.onServiceWorkerMessage(event.data));
 
     this.messageInputView.on('sendmessage', ({message}) => this.onSend(message));
+    window.addEventListener('resize', _ => this.onResize());
 
     // init
     this.displayMessages();
+  }
+
+  onResize() {
+    // Scroll to bottom when keyboard opens
+    // Somewhat of a hack.
+    if (this.messageInputView.inputFocused()) {
+      this.chatView.performScroll({instant: true});
+    }
   }
 
   async onServiceWorkerMessage(message) {

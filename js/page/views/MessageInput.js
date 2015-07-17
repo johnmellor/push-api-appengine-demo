@@ -22,4 +22,8 @@ export default class MessageInput extends EventEmitter {
   resetInput() {
     this.container.message.value = '';
   }
+
+  inputFocused() {
+    return this.container.message.matches(':focus');
+  }
 }

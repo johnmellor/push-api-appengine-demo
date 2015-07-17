@@ -10,7 +10,7 @@ export default class Chat {
     this.range.setStart(this.timeline, 0);
   }
 
-  async _performScroll({
+  async performScroll({
     instant = false
   }={}) {
     if (document.fonts) await document.fonts.ready;
@@ -38,7 +38,7 @@ export default class Chat {
     });
 
     if (shouldScroll) {
-      this._performScroll({instant: shouldScrollInstantly});
+      this.performScroll({instant: shouldScrollInstantly});
     }
   }
 
