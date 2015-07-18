@@ -5,12 +5,12 @@
 
 .chat-item {
   display: flex;
-  margin: 10px;
+  margin: 9px 8px;
 
   .avatar {
     border-radius: 500px;
     margin-right: 6px;
-    min-width: 40px;
+    min-width: 44px;
   }
 
   p {
@@ -35,8 +35,9 @@
     }
     
     .meta {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       color: #999;
+      margin-top: 3px;
     }
   }
 
