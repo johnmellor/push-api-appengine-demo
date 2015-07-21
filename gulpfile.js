@@ -98,8 +98,8 @@ gulp.task('serve', ['watch'], plugins.shell.task([
   'dev_appserver.py --port=9999 app.yaml'
 ]));
 
-gulp.task('deploy', function() {
-  
-});
+gulp.task('deploy', ['build'], plugins.shell.task([
+  'appcfg.py update app.yaml'
+]));
 
 gulp.task('default', ['build']);

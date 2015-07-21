@@ -7,7 +7,7 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 
   event.waitUntil(
-    caches.open('chat-static-v7').then(cache => {
+    caches.open('chat-static-v8').then(cache => {
       return cache.addAll(
         [
           '/',
@@ -21,7 +21,7 @@ self.addEventListener("install", event => {
   );
 });
 
-const cachesToKeep = ['chat-static-v7'];
+const cachesToKeep = ['chat-static-v8', 'chat-avatars'];
 
 self.addEventListener('activate', event => {
   clients.claim();
@@ -36,10 +36,34 @@ self.addEventListener('activate', event => {
   );
 });
 
+async function avatarFetch(request) {
+  // some hackery because Chrome doesn't support ignoreSearch in cache matching
+  let noSearchUrl = new URL(request.url);
+  noSearchUrl.search = '';
+  noSearchUrl = noSearchUrl.href;
+
+  const responsePromise = fetch(request);
+  const cache = await caches.open('chat-avatars');
+  const matchingRequest = (await cache.keys()).find(r => r.url.startsWith(noSearchUrl));
+  
+  const networkResponse = responsePromise.then(async response => {
+    cache.put(request, response.clone());
+    return response;
+  });
+
+  return (matchingRequest ? cache.match(matchingRequest) : networkResponse);
+}
+
 self.addEventListener('fetch', event => {
   const request = event.request;
+  const url = new URL(request.url);
 
   if (request.method != 'GET') return;
+
+  if (url.origin == 'https://www.gravatar.com' && url.pathname.startsWith('/avatar/')) {
+    event.respondWith(avatarFetch(request));
+    return;
+  }
 
   event.respondWith(
     caches.match(request).then(function(response) {
