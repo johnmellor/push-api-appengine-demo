@@ -133,6 +133,12 @@ def root():
 @get('/messages.json')
 def chat_messages():
     """XHR to fetch the most recent chat messages."""
+    if not users.get_current_user():
+        return {
+            "err": "Not logged in",
+            "loginUrl": users.create_login_url('/')
+        }
+
     messages = reversed(Message.query(ancestor=thread_key())
                                .order(-Message.creation_date).fetch(20))
     return {
@@ -212,6 +218,12 @@ def clear_chat_registrations():
 
 @post('/send')
 def send_chat():
+    if not users.get_current_user():
+        return {
+            "err": "Not logged in",
+            "loginUrl": users.create_login_url('/')
+        }
+
     message_text = request.forms.message
     user_endpoint = request.forms.push_endpoint
 
@@ -266,9 +278,7 @@ def send(type, data, user_endpoint):
         ndb.put_multi(registrations)
 
     if gcm_stats.success_count + firefox_stats.success_count == 0:
-        if gcm_stats.total_count + firefox_stats.total_count == 0:
-            abort(500, "No devices are registered to receive messages")
-        else:
+        if not gcm_stats.total_count + firefox_stats.total_count == 0:
             abort(500, "Failed to send message to any of the %d registered "
                        "devices%s%s"
                        % (gcm_stats.total_count + firefox_stats.total_count,

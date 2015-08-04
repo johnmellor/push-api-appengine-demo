@@ -7,7 +7,7 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 
   event.waitUntil(
-    caches.open('chat-static-v8').then(cache => {
+    caches.open('chat-static-v9').then(cache => {
       return cache.addAll(
         [
           '/',
@@ -21,7 +21,7 @@ self.addEventListener("install", event => {
   );
 });
 
-const cachesToKeep = ['chat-static-v8', 'chat-avatars'];
+const cachesToKeep = ['chat-static-v9', 'chat-avatars'];
 
 self.addEventListener('activate', event => {
   clients.claim();
@@ -62,6 +62,7 @@ function messagesFetch(request) {
       const cachePromise = caches.open('chat-avatars');
       const cachedRequestsPromise = cachePromise.then(c => c.keys());
       const userIdsPromise = clonedResponse.json().then(data => {
+        if (data.loginUrl) return [];
         return data.messages.map(m => m.user);
       });
 
@@ -70,7 +71,7 @@ function messagesFetch(request) {
       const userIds = await userIdsPromise;
 
       // Find cached avatars that don't appear in messages.json
-      // and delete them
+      // and delete them - prevents avatars cache getting too big
       cachedRequests.filter(
         request => !userIds.some(id => request.url.includes(id))
       ).map(request => cache.delete(request));
@@ -108,6 +109,9 @@ self.addEventListener('push', event => {
     fetch("/messages.json", {
       credentials: "include"
     }).then(async response => {
+      // TODO: need to do something better in this case
+      if (response.loginUrl) return;
+
       const messages = (await response.json()).messages.map(m => toMessageObj(m));
       await chatStore.setChatMessages(messages);
       broadcast('updateMessages');
@@ -174,15 +178,24 @@ async function postOutbox() {
       credentials: 'include'
     });
 
-    await chatStore.removeFromOutbox(message.id);
-
     if (!response.ok) {
+      // remove the bad message
+      // (assuming the message is bad isn't a great assumption)
+      await chatStore.removeFromOutbox(message.id);
       broadcast({
         sendFailed: message.id
       });
       continue;
     }
 
+    let responseJson = await response.json();
+
+    if (responseJson.loginUrl) {
+      broadcast(responseJson);
+      return;
+    }
+
+    await chatStore.removeFromOutbox(message.id);
     let sentMessage = toMessageObj(await response.json());
     chatStore.addChatMessage(sentMessage);
 

@@ -47,6 +47,9 @@ class MainController {
     if (message == 'updateMessages') {
       await this.mergeCachedMessages();
     }
+    else if ('loginUrl' in message) {
+      window.location.href = message.loginUrl;
+    }
     else if ('messageSent' in message) {
       this.chatView.markSent(message.messageSent, {
         newId: message.message.id,
@@ -90,6 +93,11 @@ class MainController {
     const dataPromise = fetch('/messages.json', {
       credentials: 'include'
     }).then(r => r.json());
+
+    if (dataPromise.loginUrl) {
+      window.location.href = dataPromise.loginUrl;
+      return;
+    }
 
     await this.mergeCachedMessages();
     this.chatView.mergeMessages(await chatStore.getOutbox());
