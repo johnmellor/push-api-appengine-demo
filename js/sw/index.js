@@ -46,12 +46,38 @@ async function avatarFetch(request) {
   const cache = await caches.open('chat-avatars');
   const matchingRequest = (await cache.keys()).find(r => r.url.startsWith(noSearchUrl));
   
-  const networkResponse = responsePromise.then(async response => {
+  const networkResponse = responsePromise.then(response => {
     cache.put(request, response.clone());
     return response;
   });
 
   return (matchingRequest ? cache.match(matchingRequest) : networkResponse);
+}
+
+function messagesFetch(request) {
+  return fetch(request).then(response => {
+    const clonedResponse = response.clone();
+
+    (async _ => {
+      const cachePromise = caches.open('chat-avatars');
+      const cachedRequestsPromise = cachePromise.then(c => c.keys());
+      const userIdsPromise = clonedResponse.json().then(data => {
+        return data.messages.map(m => m.user);
+      });
+
+      const cache = await cachePromise;
+      const cachedRequests = await cachedRequestsPromise;
+      const userIds = await userIdsPromise;
+
+      // Find cached avatars that don't appear in messages.json
+      // and delete them
+      cachedRequests.filter(
+        request => !userIds.some(id => request.url.includes(id))
+      ).map(request => cache.delete(request));
+    }());
+
+    return response;
+  });
 }
 
 self.addEventListener('fetch', event => {
@@ -62,6 +88,11 @@ self.addEventListener('fetch', event => {
 
   if (url.origin == 'https://www.gravatar.com' && url.pathname.startsWith('/avatar/')) {
     event.respondWith(avatarFetch(request));
+    return;
+  }
+
+  if (url.origin == location.origin && url.pathname == '/messages.json') {
+    event.respondWith(messagesFetch(request));
     return;
   }
 
