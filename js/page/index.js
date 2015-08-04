@@ -28,6 +28,8 @@ class MainController {
     }); 
     navigator.serviceWorker.addEventListener("message", event => this.onServiceWorkerMessage(event.data));
 
+    navigator.serviceWorker.addEventListener('controllerchange', _ => this.onServiceWorkerControllerChange());
+
     this.messageInputView.on('sendmessage', ({message}) => this.onSend(message));
     window.addEventListener('resize', _ => this.onResize());
 
@@ -41,6 +43,13 @@ class MainController {
     if (this.messageInputView.inputFocused()) {
       this.chatView.performScroll({instant: true});
     }
+  }
+
+  onServiceWorkerControllerChange() {
+    if (this.messageInputView.inputIsEmpty()) {
+      window.location.reload();
+    }
+    // TODO: I should show a toast if the input isn't empty
   }
 
   async onServiceWorkerMessage(message) {

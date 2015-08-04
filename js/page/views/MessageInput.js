@@ -26,4 +26,8 @@ export default class MessageInput extends EventEmitter {
   inputFocused() {
     return this.container.message.matches(':focus');
   }
+
+  inputIsEmpty() {
+    return !this.container.message.value;
+  }
 }
