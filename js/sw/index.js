@@ -1,5 +1,6 @@
 import "babelify/node_modules/babel-core/node_modules/regenerator/runtime";
 import "serviceworker-cache-polyfill";
+import "../arrayFind";
 import * as chatStore from "../chatStore";
 import toMessageObj from "../toMessageObj";
 
