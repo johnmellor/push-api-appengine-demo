@@ -7,7 +7,7 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 
   event.waitUntil(
-    caches.open('chat-static-v9').then(cache => {
+    caches.open('chat-static-v10').then(cache => {
       return cache.addAll(
         [
           '/',
@@ -21,7 +21,7 @@ self.addEventListener("install", event => {
   );
 });
 
-const cachesToKeep = ['chat-static-v9', 'chat-avatars'];
+const cachesToKeep = ['chat-static-v10', 'chat-avatars'];
 
 self.addEventListener('activate', event => {
   clients.claim();
