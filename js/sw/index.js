@@ -196,7 +196,7 @@ async function postOutbox() {
     }
 
     await chatStore.removeFromOutbox(message.id);
-    let sentMessage = toMessageObj(await response.json());
+    let sentMessage = toMessageObj(responseJson);
     chatStore.addChatMessage(sentMessage);
 
     broadcast({
