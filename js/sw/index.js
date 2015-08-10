@@ -8,21 +8,25 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 
   event.waitUntil(
-    caches.open('chat-static-v10').then(cache => {
-      return cache.addAll(
-        [
-          '/',
-          '/static/css/app.css',
-          '/static/fonts/roboto.woff',
-          '/static/js/page.js',
-          '/static/imgs/hangouts.png'
-        ].map(u => new Request(u, {credentials: 'include'}))
-      );
+    caches.open('chat-static-v11').then(cache => {
+      return Promise.all([
+        '/',
+        '/static/css/app.css',
+        '/static/fonts/roboto.woff',
+        '/static/js/page.js',
+        '/static/imgs/hangouts.png'
+      ].map(url => {
+        let request = new Request(url, {credentials: 'include'});
+        return fetch(request).then(response => {
+          if (!response.ok) throw Error("NOT OK");
+          return cache.put(request, response);
+        });
+      }));
     })
   );
 });
 
-const cachesToKeep = ['chat-static-v10', 'chat-avatars'];
+const cachesToKeep = ['chat-static-v11', 'chat-avatars'];
 
 self.addEventListener('activate', event => {
   clients.claim();
