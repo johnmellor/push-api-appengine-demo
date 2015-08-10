@@ -11,7 +11,7 @@ class MainController {
   constructor() {
     this.chatView = new ChatView($('.chat-content'), userId);
     this.globalWarningView = new GlobalWarningView($('.global-warning'));
-    this.messageInputView = new MessageInputView($('.message-form'));
+    this.messageInputView = new MessageInputView($('.message-input'));
     this.logoutEl = $('.logout');
     this.serviceWorkerReg = this.registerServiceWorker();
     this.pushSubscription = this.registerPush();

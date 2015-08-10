@@ -9,6 +9,7 @@ var source = require('vinyl-source-stream');
 var buffer = require('vinyl-buffer');
 var babelify = require('babelify');
 var hbsfy = require('hbsfy');
+var configurify = require('configurify');
 
 gulp.task('clean', function (done) {
   require('del')(['static/js', 'static/css'], done);
@@ -35,6 +36,7 @@ function createBundler(src) {
     });
   }
 
+  b.transform(configurify);
   b.transform(babelify.configure({
     stage: 1
   }));

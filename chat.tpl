@@ -16,12 +16,15 @@
     <div class="chat-content">
       <ul class="chat-timeline"></ul>
     </div>
-    <form action="/send" method="post" class="message-form">
-      <input type="text" name="message" class="input-message" placeholder="Send to group">
-      <button type="submit">
-        <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
-      </button>
-    </form>
+    <div class="message-input">
+      <form action="/send" method="post" class="message-form">
+        <input type="text" name="message" class="input-message" placeholder="Send to group" readonly>
+        <button type="submit">
+          <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        </button>
+      </form>
+      <div class="keyboard"></div>
+    </div>
   </div>
   <script>
     var userId = '{{user_id}}';

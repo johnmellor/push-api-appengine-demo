@@ -1,0 +1,96 @@
+.keyboard {
+  display: flex;
+  flex-flow: column;
+  height: 283px;
+  background: #eceff1;
+  max-height: 50vh;
+
+  @media (min-height: 700px) {
+    height: 311px;
+  }
+
+  & .keys {
+    flex: 1;
+    display: flex;
+    flex-flow: column wrap;
+    justify-content: center;
+    overflow: hidden;
+    overflow-x: auto;
+    border-top: 1px solid #f6f7f8;
+  }
+  
+  & .tools {
+    display: flex;
+    flex-flow: row;
+  }
+
+  & .categories {
+    flex: 1;
+    display: flex;
+    flex-flow: row;
+    justify-content: space-around;
+    background: #e4e7e9;
+  }
+
+  & .tools button,
+  & .keys button {
+    border: none;
+    background: none;
+    padding: 0;
+    margin: 0;
+    box-sizing: content-box;
+    fill: #b0b6bb;
+
+    &:focus {
+      outline: none;
+      fill: #000;
+    }
+    
+    & svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  & .keys button {
+    width: 57px;
+    height: 57px;
+    font-size: 40px;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+
+    &:focus {
+      outline: none;
+      background: rgba(0,0,0,0.1);
+    }
+  }
+
+  & .tools button {
+    width: 29px;
+    height: 29px;
+    padding: 9px;
+  }
+
+  & .del {
+    background: #eceff1;
+    fill: #7f8b8f;
+  }
+
+  & .space {
+    display: flex;
+    border-top: 2px solid #e4e7e9;
+    justify-content: center;
+
+    & button {
+      width: 80%;
+      margin: 13px 0;
+      border: none;
+      border-radius: 5px;
+      background: #d1d6d9;
+      color: transparent;
+      height: 24px;
+
+    }
+  }
+}
