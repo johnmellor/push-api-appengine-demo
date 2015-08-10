@@ -1,5 +1,5 @@
 .keyboard {
-  display: flex;
+  display: none;
   flex-flow: column;
   height: 283px;
   background: #eceff1;
@@ -16,6 +16,7 @@
     justify-content: center;
     overflow: hidden;
     overflow-x: auto;
+    scroll-behavior: smooth;
     border-top: 1px solid #f6f7f8;
   }
   
@@ -41,9 +42,10 @@
     box-sizing: content-box;
     fill: #b0b6bb;
 
-    &:focus {
+    &:focus,
+    &.active {
       outline: none;
-      fill: #000;
+      fill: #37474f;
     }
     
     & svg {
@@ -60,7 +62,8 @@
     align-items: center;
     display: flex;
 
-    &:focus {
+    &:focus,
+    &.active {
       outline: none;
       background: rgba(0,0,0,0.1);
     }
@@ -72,7 +75,7 @@
     padding: 9px;
   }
 
-  & .del {
+  & button.del {
     background: #eceff1;
     fill: #7f8b8f;
   }
@@ -83,7 +86,7 @@
     justify-content: center;
 
     & button {
-      width: 80%;
+      width: 70%;
       margin: 13px 0;
       border: none;
       border-radius: 5px;
@@ -91,6 +94,11 @@
       color: transparent;
       height: 24px;
 
+      &:focus,
+      &.active {
+        outline: none;
+        background: #7f8b8f;
+      }
     }
   }
 }

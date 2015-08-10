@@ -31,10 +31,15 @@ class MainController {
     navigator.serviceWorker.addEventListener('controllerchange', _ => this.onServiceWorkerControllerChange());
 
     this.messageInputView.on('sendmessage', ({message}) => this.onSend(message));
+    this.messageInputView.on('keyboardopen', _ => this.onKeyboardOpen());
     window.addEventListener('resize', _ => this.onResize());
 
     // init
     this.displayMessages();
+  }
+
+  onKeyboardOpen() {
+    this.chatView.performScroll({instant: true});
   }
 
   onResize() {

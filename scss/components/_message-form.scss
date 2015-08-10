@@ -1,3 +1,22 @@
+.message-input {
+  position: relative;
+
+  &.active {
+    & .keyboard {
+      display: flex;
+    }
+  }
+
+  &.exiting {
+    & .keyboard {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+    }
+  }
+}
+
 .message-form {
   background: #fff;
   border-top: 1px solid #c1c1c1;
