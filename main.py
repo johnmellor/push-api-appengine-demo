@@ -108,8 +108,8 @@ def setup():
 @get('/manifest.json')
 def manifest():
     return {
-        "short_name": "Chat App",
-        "name": "Chat App",
+        "short_name": "Emojoy",
+        "name": "Emojoy",
         "scope": "./",
         "icons": [
             {
