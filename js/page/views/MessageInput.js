@@ -65,6 +65,7 @@ export default class MessageInput extends EventEmitter {
     this.keys.addEventListener('click', e => this._onEmojiKeyClick(e));
     this.container.querySelector('.space button').addEventListener('click', e => this._onSpaceClick(e));
     this.container.querySelector('.del').addEventListener('click', e => this._onDelClick(e));
+    document.addEventListener('keydown', e => this._onKeyDown(e));
 
     // events for mouse/touchstart effect
     this._initButtonActiveStyle(this.keyboard);
@@ -98,9 +99,25 @@ export default class MessageInput extends EventEmitter {
     this.form.message.scrollLeft = this.form.message.scrollWidth;
   }
 
+  _del() {
+    this.form.message.value = [...this.form.message.value].slice(0, -1).join('');
+  }
+
+  _onKeyDown(event) {
+    if (!this.container.classList.contains('active')) return;
+    if (event.keyCode == 8) { // backspace
+      event.preventDefault();
+      this._del();
+    }
+    else if (event.keyCode == 32) { // space
+      event.preventDefault();
+      this._addToInput(' ');
+    }
+  }
+
   _onDelClick(event) {
     let button = event.currentTarget;
-    this.form.message.value = [...this.form.message.value].slice(0, -1).join('');
+    this._del();
     button.blur();
     event.preventDefault();
   }
