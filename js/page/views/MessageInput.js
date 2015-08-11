@@ -119,7 +119,7 @@ export default class MessageInput extends EventEmitter {
     }
     else if (event.keyCode >= 48 && event.keyCode <= 90) {
       let allKeys = this.keys.querySelectorAll('button');
-      this._addToInput(allKeys[Math.round(Math.random() * allKeys.length)].textContent);
+      this._addToInput(allKeys[Math.floor(Math.random() * allKeys.length)].textContent);
     }
   }
 
