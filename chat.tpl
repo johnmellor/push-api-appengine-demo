@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html><head>
-  <title>Chat App</title>
+  <title>Emojoy!</title>
   <meta name="viewport" content="width=device-width, user-scalable=no">
-  <meta name="theme-color" content="#0f9d58">
+  <meta name="theme-color" content="#9C27B0">
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" href="/static/imgs/hangouts.png" sizes="42x42">
   <link href="/static/css/app.css" rel="stylesheet">
 </head><body>
   <div class="layout">
     <header class="toolbar">
-      <h1>Chat demo</h1>
+      <h1>Emojoy!</h1>
       <a href="{{logout_url}}" class="logout">Logout</a>
     </header>
     <div class="global-warning"></div>

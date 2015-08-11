@@ -52,12 +52,12 @@
     }
 
     & .bubble {
-      background: #def3d8;
+      background: #F9D7FF;
 
       &::before {
         left: 100%;
         border-width: 10px 10px 0 0;
-        border-color: #def3d8 transparent transparent transparent;
+        border-color: #F9D7FF transparent transparent transparent;
       }
     }
   }
