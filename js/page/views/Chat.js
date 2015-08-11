@@ -20,7 +20,9 @@ export default class Chat {
       this.container.style.scrollBehavior = 'auto';
     }
     this.container.scrollTop = topPos;
-    this.container.style.scrollBehavior = '';
+
+    // ughhhh
+    setTimeout(_ => this.container.style.scrollBehavior = '', 50);
   }
 
   _createElement(message) {
