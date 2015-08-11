@@ -49,7 +49,9 @@ export default class MessageInput extends EventEmitter {
     ], {
       duration: 200,
       easing: 'ease-out'
-    });
+    }).onfinish = _ => {
+      this.keys.classList.add('render-all');
+    };
   }
 
   _initKeyboard() {

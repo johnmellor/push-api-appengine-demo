@@ -14,10 +14,15 @@
     display: flex;
     flex-flow: column wrap;
     justify-content: center;
+    align-content: flex-start;
     overflow: hidden;
     overflow-x: auto;
     scroll-behavior: smooth;
     border-top: 1px solid #f6f7f8;
+
+    &.render-all button {
+      display: flex;
+    }
   }
   
   & .tools {
@@ -60,7 +65,16 @@
     font-size: 40px;
     justify-content: center;
     align-items: center;
-    display: flex;
+    display: none;
+    
+    // do a small initial layout for quick animation
+    &:nth-child(-n+42) {
+      display: flex;
+    }
+
+    @media (min-width: 800px) {
+      display: flex;
+    }
 
     &:focus,
     &.active {

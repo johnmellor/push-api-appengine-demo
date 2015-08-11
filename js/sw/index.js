@@ -98,8 +98,13 @@ self.addEventListener('fetch', event => {
   }
 
   if (url.origin == location.origin && url.pathname == '/messages.json') {
-    event.respondWith(messagesFetch(request));
-    return;
+    if (url.pathname.startsWith('/_ah/login')) { // login page during dev
+      return;
+    }
+    if (url.pathname == '/messages.json') {
+      event.respondWith(messagesFetch(request));
+      return;
+    }
   }
 
   event.respondWith(
