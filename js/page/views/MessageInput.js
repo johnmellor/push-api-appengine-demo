@@ -109,9 +109,17 @@ export default class MessageInput extends EventEmitter {
       event.preventDefault();
       this._del();
     }
+    else if (event.keyCode == 13) { // enter
+      event.preventDefault();
+      this._onSubmit();
+    }
     else if (event.keyCode == 32) { // space
       event.preventDefault();
       this._addToInput(' ');
+    }
+    else if (event.keyCode >= 48 && event.keyCode <= 90) {
+      let allKeys = this.keys.querySelectorAll('button');
+      this._addToInput(allKeys[Math.round(Math.random() * allKeys.length)].textContent);
     }
   }
 
