@@ -259,7 +259,7 @@ def send_chat():
     if message_text == '':
         abort(400, "Empty message")
 
-    if user.email() != 'jaffathecake@gmail.com': # I am special
+    if user.email() != 'jaffathecake@gmail.com':  # I am special
         if codepoint_count(message_text) > 200:
             abort(400, "Too long")
 

@@ -95,9 +95,15 @@ export default class MessageInput extends EventEmitter {
   }
 
   _addToInput(val) {
-    this.form.message.value += val;
     // limit to 200 chars
-    this.form.message.value = [...this.form.message.value].slice(0, 200).join('');
+    let newMessage = this.form.message.value + val;
+    let msg = '';
+    let i = 0;
+    for (let codepoint of newMessage) {
+      if (i > 200) break;
+      msg += codepoint;
+    }
+    this.form.message.value = msg;
     this.form.message.scrollLeft = this.form.message.scrollWidth;
   }
 

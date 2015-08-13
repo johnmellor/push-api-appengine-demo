@@ -8,7 +8,7 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 
   event.waitUntil(
-    caches.open('chat-static-v18').then(cache => {
+    caches.open('chat-static-v19').then(cache => {
       return Promise.all([
         '/',
         '/static/css/app.css',
@@ -26,7 +26,7 @@ self.addEventListener("install", event => {
   );
 });
 
-const cachesToKeep = ['chat-static-v18', 'chat-avatars'];
+const cachesToKeep = ['chat-static-v19', 'chat-avatars'];
 
 self.addEventListener('activate', event => {
   clients.claim();
