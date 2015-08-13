@@ -85,8 +85,8 @@ export default class Chat {
     }
   }
 
-  markFailed(id) {
+  markFailed(id, reason) {
     const item = this.timeline.querySelector(`.chat-item[data-id='${id}']`);
-    item.querySelector('.state').textContent = 'Sending failed';
+    item.querySelector('.state').textContent = 'Sending failed: ' + reason;
   }
 }

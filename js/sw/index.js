@@ -8,7 +8,7 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 
   event.waitUntil(
-    caches.open('chat-static-v20').then(cache => {
+    caches.open('chat-static-v21').then(cache => {
       return Promise.all([
         '/',
         '/static/css/app.css',
@@ -26,7 +26,7 @@ self.addEventListener("install", event => {
   );
 });
 
-const cachesToKeep = ['chat-static-v20', 'chat-avatars'];
+const cachesToKeep = ['chat-static-v21', 'chat-avatars'];
 
 self.addEventListener('activate', event => {
   clients.claim();
@@ -191,9 +191,18 @@ async function postOutbox() {
     if (!response.ok) {
       // remove the bad message
       // (assuming the message is bad isn't a great assumption)
-      await chatStore.removeFromOutbox(message.id);
+      chatStore.removeFromOutbox(message.id);
+      let errReason = "Unknown error";
+
+      try {
+        errReason = (await response.json()).err;
+      } catch(e) {}
+
       broadcast({
-        sendFailed: message.id
+        sendFailed: {
+          id: message.id,
+          reason: errReason
+        }
       });
       continue;
     }

@@ -71,7 +71,7 @@ class MainController {
       });
     }
     else if ('sendFailed' in message) {
-      this.chatView.markFailed(message.sendFailed);
+      this.chatView.markFailed(message.sendFailed.id, message.sendFailed.reason);
     }
   }
 

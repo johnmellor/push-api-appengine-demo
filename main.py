@@ -16,6 +16,7 @@ import os
 from protorpc import messages
 import urllib
 import hashlib
+from datetime import timedelta, datetime
 
 DEFAULT_GCM_ENDPOINT = 'https://android.googleapis.com/gcm/send'
 
@@ -82,7 +83,7 @@ class Registration(ndb.Model):
 class Message(ndb.Model):
     creation_date = ndb.DateTimeProperty(auto_now_add=True)
     text = ndb.StringProperty(indexed=False)
-    user = ndb.StringProperty(indexed=False)
+    user = ndb.StringProperty(indexed=True)
 
 def thread_key(thread_name='default_thread'):
     return ndb.Key('Thread', thread_name)
@@ -257,28 +258,32 @@ def send_chat():
     sender = get_user_id(user)
 
     if message_text == '':
-        abort(400, "Empty message")
+        response.status = 400
+        return {"err": "Empty message"}
 
     if user.email() != 'jaffathecake@gmail.com':  # I am special
         if codepoint_count(message_text) > 200:
-            abort(400, "Too long")
+            response.status = 413
+            return {"err": "Message too long"}
 
         for code_point in message_text:
             print 'char'
             if code_point not in ALLOWED_CHARS:
-                abort(400, "Only emoji allowed")
+                response.status = 400
+                return {"err": "Only emoji allowed"}
 
     settings = GcmSettings.singleton()
     if (settings.spam_regex
             and re.search(settings.spam_regex, message_text)):
-        abort(400, "Spam")
+        response.status = 400
+        return {"err": "Detected as spam"}
     else:
-        last_message = Message.query(ancestor=thread_key()) \
-                              .order(-Message.creation_date).get()
-        if last_message and last_message.text == message_text:
-            abort(400, """
-Please don't send the same message twice in a row - each
-message goes to many devices.""")
+        num_recent_messages_from_user = Message.query(ancestor=thread_key()) \
+            .filter(Message.creation_date > datetime.now() - timedelta(seconds=10), Message.user == sender) \
+            .count(1)
+        if num_recent_messages_from_user:
+            response.status = 429
+            return {"err": "Only one message every ten seconds"}
 
     # Store message
     message = Message(parent=thread_key())
