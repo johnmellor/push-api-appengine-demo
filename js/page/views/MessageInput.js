@@ -166,7 +166,9 @@ export default class MessageInput extends EventEmitter {
   }
 
   _onSubmit() {
-    this.emit('sendmessage', {message: this.form.message.value});
+    let message = this.form.message.value.trim();
+    if (!message) return;
+    this.emit('sendmessage', {message});
   }
 
   resetInput() {
