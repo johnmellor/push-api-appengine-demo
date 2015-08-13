@@ -108,7 +108,9 @@ export default class MessageInput extends EventEmitter {
   }
 
   _del() {
-    this.form.message.value = [...this.form.message.value].slice(0, -1).join('');
+    let codePoints = [];
+    for (let codePoint of this.form.message.value) codePoints.push(codePoint);
+    this.form.message.value = codePoints.slice(0, -1).join('');
   }
 
   _onKeyDown(event) {
