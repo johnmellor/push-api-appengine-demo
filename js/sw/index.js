@@ -8,7 +8,7 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 
   event.waitUntil(
-    caches.open('chat-static-v22').then(cache => {
+    caches.open('chat-static-v23').then(cache => {
       return Promise.all([
         '/',
         '/static/css/app.css',
@@ -26,7 +26,7 @@ self.addEventListener("install", event => {
   );
 });
 
-const cachesToKeep = ['chat-static-v22', 'chat-avatars'];
+const cachesToKeep = ['chat-static-v23', 'chat-avatars'];
 
 self.addEventListener('activate', event => {
   clients.claim();
@@ -98,7 +98,7 @@ self.addEventListener('fetch', event => {
   }
 
   if (url.origin == location.origin && url.pathname == '/messages.json') {
-    if (url.pathname.startsWith('/_ah/login')) { // login page during dev
+    if (url.pathname.startsWith('/_ah/')) { // login urls
       return;
     }
     if (url.pathname == '/messages.json') {

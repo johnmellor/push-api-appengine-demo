@@ -108,14 +108,18 @@ class MainController {
       credentials: 'include'
     }).then(r => r.json());
 
-    if (dataPromise.loginUrl) {
-      window.location.href = dataPromise.loginUrl;
-      return;
-    }
 
     await this.mergeCachedMessages();
     this.chatView.mergeMessages(await chatStore.getOutbox());
-    const messages = (await dataPromise).messages.map(m => toMessageObj(m));
+
+    const data = await dataPromise;
+    
+    if (data.loginUrl) {
+      window.location.href = data.loginUrl;
+      return;
+    }
+
+    const messages = data.messages.map(m => toMessageObj(m));
 
     chatStore.setChatMessages(messages);
     this.chatView.mergeMessages(messages);
