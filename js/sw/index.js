@@ -8,7 +8,7 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 
   event.waitUntil(
-    fetch('/messages.json').then(r => r.json).then(data => {
+    fetch('/messages.json').then(r => r.json()).then(data => {
       if (data.loginUrl) {
         // needs login
         registration.unregister();
