@@ -19,6 +19,11 @@ self.addEventListener("install", event => {
         let request = new Request(url, {credentials: 'include'});
         return fetch(request).then(response => {
           if (!response.ok) throw Error("NOT OK");
+          if (response.url != request.url) {
+            // needs login
+            registration.unregister();
+            throw Error("Needs login");
+          }
           return cache.put(request, response);
         });
       }));
