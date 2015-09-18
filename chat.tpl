@@ -372,8 +372,9 @@
         }
         fetchMessages();
 
-        $('#send-form').addEventListener('submit', function(evt) {
-            evt.preventDefault();
+        function sendMessage(evt) {
+            if (evt)
+                evt.preventDefault();
             console.log("Sending message to " + location.hostname + "...");
             setStatus('send', '', "");
 
@@ -400,14 +401,26 @@
             };
             xhr.open('POST', '/chat/send');
             xhr.send(formData);
-        });
+        }
+        $('#send-form').addEventListener('submit', sendMessage);
 
-        // HACK: On Firefox, Service Workers can't yet show notifications from a
-        // Service Worker; instead the SW asks an existing open controlled tab
-        // (if any) to show the notification on its behalf.
-        // https://bugzilla.mozilla.org/show_bug.cgi?id=1114554
         navigator.serviceWorker.addEventListener("message", function(event) {
-            new Notification(event.data.title, event.data.options);
+            if ('action' in event.data) {
+                // Demo for https://github.com/whatwg/notifications/pull/48
+                // User clicked on an action button. Send corresponding message.
+                if (event.data.action == 'like')
+                    $('#message').value = "👍";
+                else if (event.data.action == 'shrug')
+                    $('#message').value = "¯\\_(ツ)_/¯";
+                sendMessage();
+            } else if ('title' in event.data) {
+                // HACK: Older versions of Firefox couldn't yet show
+                // notifications from a Service Worker; so instead the SW
+                // asked an existing open controlled tab (if any) to show the
+                // notification on its behalf.
+                // https://bugzilla.mozilla.org/show_bug.cgi?id=1114554
+                new Notification(event.data.title, event.data.options);
+            }
         });
     </script>
 

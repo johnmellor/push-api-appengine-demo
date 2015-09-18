@@ -51,6 +51,15 @@ function showNotification(usernameAndMessage) {
         tag: 'chat',
         icon: '/static/cat.png'
     };
+    // Demo for https://github.com/whatwg/notifications/pull/48
+    if ('actions' in Notification.prototype) {
+        if (username == 'onebutton') {
+            options.actions = [{action: 'like', title: "👍 Like"}];
+        } else {
+            options.actions = [{action: 'like', title: "👍 Like"},
+                               {action: 'shrug', title: "¯\\_(ツ)_/¯"}];
+        }
+    }
 
     if (self.registration.showNotification)
         return self.registration.showNotification(title, options);
@@ -98,6 +107,10 @@ this.addEventListener('notificationclick', function(evt) {
         }
         if (clients.openWindow)
             return clients.openWindow("/chat/");
+    }).then(function(client) {
+        // Demo for https://github.com/whatwg/notifications/pull/48
+        if (evt.action)
+            client.postMessage({action: evt.action});
     }));
 });
 
