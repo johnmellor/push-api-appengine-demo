@@ -104,8 +104,8 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  if (url.origin == location.origin && url.pathname == '/messages.json') {
-    if (url.pathname.startsWith('/_ah/')) { // login urls
+  if (url.origin == location.origin) {
+    if (url.pathname.startsWith('/_')) { // login urls
       return;
     }
     if (url.pathname == '/messages.json') {
