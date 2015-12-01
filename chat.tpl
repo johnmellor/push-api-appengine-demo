@@ -406,7 +406,7 @@
 
         navigator.serviceWorker.addEventListener("message", function(event) {
             if ('action' in event.data) {
-                // Demo for https://github.com/whatwg/notifications/pull/48
+                // Demo for https://notifications.spec.whatwg.org/#actions
                 // User clicked on an action button. Send corresponding message.
                 if (event.data.action == 'like')
                     $('#message').value = "👍";
