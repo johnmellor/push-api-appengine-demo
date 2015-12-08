@@ -281,9 +281,9 @@ def send_chat():
         num_recent_messages_from_user = Message.query(ancestor=thread_key()) \
             .filter(Message.creation_date > datetime.now() - timedelta(seconds=10), Message.user == sender) \
             .count(1)
-        if num_recent_messages_from_user:
+        if num_recent_messages_from_user > 10:
             response.status = 429
-            return {"err": "Only one message every ten seconds"}
+            return {"err": "Only allowed 10 messages within 10 seconds"}
 
     # Store message
     message = Message(parent=thread_key())

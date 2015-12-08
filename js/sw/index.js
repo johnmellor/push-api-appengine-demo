@@ -126,8 +126,14 @@ self.addEventListener('push', event => {
     fetch("/messages.json", {
       credentials: "include"
     }).then(async response => {
-      // TODO: need to do something better in this case
-      if (response.loginUrl) return;
+      if (response.loginUrl) {
+        return self.registration.showNotification("New Chat!", {
+          body: 'Requires login to view…',
+          tag: 'chat',
+          icon: `/static/imgs/hangouts.png`
+        });
+        return;
+      }
 
       const messages = (await response.json()).messages.map(m => toMessageObj(m));
       await chatStore.setChatMessages(messages);
@@ -239,5 +245,7 @@ self.addEventListener('message', event => {
 });
 
 self.addEventListener('sync', event => {
-  event.waitUntil(postOutbox());
+  if (event.tag == 'postOutbox') {
+    event.waitUntil(postOutbox());
+  }
 });
