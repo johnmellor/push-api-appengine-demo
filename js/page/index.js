@@ -95,7 +95,7 @@ class MainController {
 
     const reg = await this.serviceWorkerReg;
 
-    if (reg.sync) {
+    if (reg.sync && reg.sync.getTags) {
       await reg.sync.register('postOutbox');
     }
     else {

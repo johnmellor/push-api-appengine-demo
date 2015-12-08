@@ -33,7 +33,7 @@ self.addEventListener("install", event => {
   );
 });
 
-const cachesToKeep = ['chat-static-v23', 'chat-avatars'];
+const cachesToKeep = ['chat-static-v25', 'chat-avatars'];
 
 self.addEventListener('activate', event => {
   clients.claim();
