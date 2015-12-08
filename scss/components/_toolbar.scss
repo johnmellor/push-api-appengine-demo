@@ -27,5 +27,7 @@
     margin: 0 16px 0 auto;
     text-transform: uppercase;
     text-decoration: none;
+    // disabling this until logout does the right thing
+    display: none;
   }
 }
