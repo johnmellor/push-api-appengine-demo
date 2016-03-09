@@ -1,8 +1,11 @@
-import "babelify/node_modules/babel-core/node_modules/regenerator/runtime";
+import "regenerator/runtime";
 import "serviceworker-cache-polyfill";
 import "../arrayFind";
 import * as chatStore from "../chatStore";
 import toMessageObj from "../toMessageObj";
+
+const staticVersion = '28';
+const cachesToKeep = ['chat-static-v' + staticVersion, 'chat-avatars'];
 
 self.addEventListener("install", event => {
   self.skipWaiting();
@@ -14,7 +17,7 @@ self.addEventListener("install", event => {
         registration.unregister();
         throw Error("Needs login");
       }
-      return caches.open('chat-static-v23');
+      return caches.open('chat-static-v' + staticVersion);
     }).then(cache => {
       return Promise.all([
         '/',
@@ -33,7 +36,6 @@ self.addEventListener("install", event => {
   );
 });
 
-const cachesToKeep = ['chat-static-v26', 'chat-avatars'];
 
 self.addEventListener('activate', event => {
   clients.claim();
@@ -57,7 +59,7 @@ async function avatarFetch(request) {
   const responsePromise = fetch(request);
   const cache = await caches.open('chat-avatars');
   const matchingRequest = (await cache.keys()).find(r => r.url.startsWith(noSearchUrl));
-  
+
   const networkResponse = responsePromise.then(response => {
     cache.put(request, response.clone());
     return response;

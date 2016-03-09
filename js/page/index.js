@@ -1,4 +1,4 @@
-import "babelify/node_modules/babel-core/node_modules/regenerator/runtime";
+import "regenerator/runtime";
 import ChatView from "./views/Chat";
 import GlobalWarningView from "./views/GlobalWarning";
 import MessageInputView from "./views/MessageInput";
@@ -25,7 +25,7 @@ class MainController {
     window.addEventListener('message', event => { // non-standard Chrome behaviour
       if (event.origin && event.origin != location.origin) return;
       this.onServiceWorkerMessage(event.data);
-    }); 
+    });
     navigator.serviceWorker.addEventListener("message", event => this.onServiceWorkerMessage(event.data));
 
     navigator.serviceWorker.addEventListener('controllerchange', _ => this.onServiceWorkerControllerChange());
@@ -113,7 +113,7 @@ class MainController {
     this.chatView.mergeMessages(await chatStore.getOutbox());
 
     const data = await dataPromise;
-    
+
     if (data.loginUrl) {
       window.location.href = data.loginUrl;
       return;
