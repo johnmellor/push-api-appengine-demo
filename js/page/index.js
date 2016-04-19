@@ -15,6 +15,7 @@ class MainController {
     this.logoutEl = $('.logout');
     this.serviceWorkerReg = this.registerServiceWorker();
     this.pushSubscription = this.registerPush();
+    this.reloading = false;
 
     // events
     this.logoutEl.addEventListener('click', event => {
@@ -52,6 +53,8 @@ class MainController {
 
   onServiceWorkerControllerChange() {
     if (this.messageInputView.inputIsEmpty()) {
+      if (this.reloading) return;
+      this.reloading = true;
       window.location.reload();
     }
     // TODO: I should show a toast if the input isn't empty
