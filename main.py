@@ -136,12 +136,14 @@ def manifest():
         "icons": [
             {
                 "src": "/static/imgs/hangouts.png",
-                "sizes": "300x300",
+                "sizes": "500x500",
                 "type": "image/png"
             }
         ],
         "display": "standalone",
         "start_url": "/",
+        "theme_color": "#9C27B0",
+        "background_color": "#eee",
         "gcm_sender_id": GcmSettings.singleton().sender_id,
         "gcm_user_visible_only": True
     }
