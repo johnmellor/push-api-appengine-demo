@@ -4,7 +4,7 @@ import "../arrayFind";
 import * as chatStore from "../chatStore";
 import toMessageObj from "../toMessageObj";
 
-const staticVersion = '28';
+const staticVersion = '29';
 const cachesToKeep = ['chat-static-v' + staticVersion, 'chat-avatars'];
 
 self.addEventListener("install", event => {
@@ -127,9 +127,9 @@ self.addEventListener('push', event => {
   event.waitUntil(
     fetch("/messages.json", {
       credentials: "include"
-    }).then(async response => {
-      if (response.loginUrl) {
-        return self.registration.showNotification("New Chat!", {
+    }).then(r => r.json()).then(async data => {
+      if (data.loginUrl) {
+        self.registration.showNotification("New Chat!", {
           body: 'Requires login to view…',
           tag: 'chat',
           icon: `/static/imgs/hangouts.png`
@@ -137,7 +137,7 @@ self.addEventListener('push', event => {
         return;
       }
 
-      const messages = (await response.json()).messages.map(m => toMessageObj(m));
+      const messages = data.messages.map(m => toMessageObj(m));
       await chatStore.setChatMessages(messages);
       broadcast('updateMessages');
 
@@ -149,7 +149,7 @@ self.addEventListener('push', event => {
 
       const notificationMessage = messages[messages.length - 1];
 
-      return self.registration.showNotification("New Chat!", {
+      self.registration.showNotification("New Chat!", {
         body: notificationMessage.text,
         tag: 'chat',
         icon: `https://www.gravatar.com/avatar/${notificationMessage.userId}?d=retro&s=192`
