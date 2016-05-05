@@ -269,7 +269,6 @@ def send_chat():
             return {"err": "Message too long"}
 
         for code_point in message_text:
-            print 'char'
             if code_point not in ALLOWED_CHARS:
                 response.status = 400
                 return {"err": "Only emoji allowed"}
