@@ -42,7 +42,7 @@ export default class MessageInput extends EventEmitter {
         this.container.classList.remove('active');
       }
 
-      document.removeEventListener('click', outCheck);
+      document.removeEventListener('click', outCheck, true);
     };
 
     // TODO: can this be added so it doesn't pick up this event?

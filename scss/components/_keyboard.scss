@@ -19,9 +19,10 @@
     overflow-x: auto;
     scroll-behavior: smooth;
     border-top: 1px solid #f6f7f8;
+    -webkit-overflow-scrolling: touch;
 
     &.render-all button {
-      display: flex;
+      display: block;
     }
   }
   
@@ -60,20 +61,17 @@
   }
 
   & .keys button {
+    display: none;
     width: 57px;
     height: 57px;
-    font-size: 40px;
-    justify-content: center;
-    align-items: center;
-    display: none;
     
     // do a small initial layout for quick animation
     &:nth-child(-n+42) {
-      display: flex;
+      display: block;
     }
 
     @media (min-width: 800px) {
-      display: flex;
+      display: block;
     }
 
     &:focus,
@@ -81,6 +79,15 @@
       outline: none;
       background: rgba(0,0,0,0.1);
     }
+  }
+  
+  & .keys .char {
+    display: flex;
+    width: 57px;
+    height: 57px;
+    font-size: 40px;
+    justify-content: center;
+    align-items: center;
   }
 
   & .tools button {

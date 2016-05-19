@@ -117,6 +117,46 @@ class MainController {
         reg.active.postMessage('postOutbox');
       }
     }
+    else {
+      // Booooo
+      const data = new FormData();
+      data.append('message', message);
+      
+      const xhr = new XMLHttpRequest();
+      xhr.withCredentials = true;
+      xhr.responseType = 'json';
+      xhr.onload = () => {
+        if (xhr.status != 201) {
+          this.onServiceWorkerMessage({
+            sendFailed: {
+              id: tempId,
+              reason: xhr.response.err
+            }
+          });
+          return;
+        }
+        
+        if (xhr.response.loginUrl) {
+          this.onServiceWorkerMessage(xhr.response);
+          return;
+        }
+        
+        this.onServiceWorkerMessage({
+          messageSent: tempId,
+          message: toMessageObj(xhr.response)
+        });
+      };
+      xhr.onerror = () => {
+        this.onServiceWorkerMessage({
+          sendFailed: {
+            id: tempId,
+            reason: 'Failed to send'
+          }
+        });
+      };
+      xhr.open('POST', '/send')
+      xhr.send(data);
+    }
   }
 
   // this is only run in service-worker supporting browsers
