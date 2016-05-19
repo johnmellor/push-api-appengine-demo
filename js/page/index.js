@@ -23,20 +23,26 @@ class MainController {
       this.logout();
     });
 
-    window.addEventListener('message', event => { // non-standard Chrome behaviour
-      if (event.origin && event.origin != location.origin) return;
-      this.onServiceWorkerMessage(event.data);
-    });
-    navigator.serviceWorker.addEventListener("message", event => this.onServiceWorkerMessage(event.data));
-
-    navigator.serviceWorker.addEventListener('controllerchange', _ => this.onServiceWorkerControllerChange());
+    if (navigator.serviceWorker) {
+      window.addEventListener('message', event => { // non-standard Chrome behaviour
+        if (event.origin && event.origin != location.origin) return;
+        this.onServiceWorkerMessage(event.data);
+      });
+      navigator.serviceWorker.addEventListener("message", event => this.onServiceWorkerMessage(event.data));
+      navigator.serviceWorker.addEventListener('controllerchange', _ => this.onServiceWorkerControllerChange());
+    }
 
     this.messageInputView.on('sendmessage', ({message}) => this.onSend(message));
     this.messageInputView.on('keyboardopen', _ => this.onKeyboardOpen());
     window.addEventListener('resize', _ => this.onResize());
 
     // init
-    this.displayMessages();
+    if (navigator.serviceWorker) {
+      this.displayMessages();
+    }
+    else {
+      this.fallbackPollMessages();
+    }
   }
 
   onKeyboardOpen() {
@@ -93,24 +99,71 @@ class MainController {
       id: tempId,
     };
 
-    await chatStore.addToOutbox(newMessage);
+    // No point doing idb storage if there's no SW
+    // Also means we don't have to deal with Safari's mad IDB 
+    if (navigator.serviceWorker) { 
+      await chatStore.addToOutbox(newMessage);
+    }
+    
     this.chatView.addMessage(newMessage);
 
-    const reg = await this.serviceWorkerReg;
+    if (navigator.serviceWorker) {
+      const reg = await this.serviceWorkerReg;
 
-    if (reg.sync && reg.sync.getTags) {
-      await reg.sync.register('postOutbox');
+      if (reg.sync && reg.sync.getTags) {
+        await reg.sync.register('postOutbox');
+      }
+      else {
+        reg.active.postMessage('postOutbox');
+      }
     }
     else {
-      reg.active.postMessage('postOutbox');
+      // Booooo
+      const data = new FormData();
+      data.append('message', message);
+      
+      const xhr = new XMLHttpRequest();
+      xhr.withCredentials = true;
+      xhr.responseType = 'json';
+      xhr.onload = () => {
+        if (xhr.status != 201) {
+          this.onServiceWorkerMessage({
+            sendFailed: {
+              id: tempId,
+              reason: xhr.response.err
+            }
+          });
+          return;
+        }
+        
+        if (xhr.response.loginUrl) {
+          this.onServiceWorkerMessage(xhr.response);
+          return;
+        }
+        
+        this.onServiceWorkerMessage({
+          messageSent: tempId,
+          message: toMessageObj(xhr.response)
+        });
+      };
+      xhr.onerror = () => {
+        this.onServiceWorkerMessage({
+          sendFailed: {
+            id: tempId,
+            reason: 'Failed to send'
+          }
+        });
+      };
+      xhr.open('POST', '/send')
+      xhr.send(data);
     }
   }
 
+  // this is only run in service-worker supporting browsers
   async displayMessages() {
     const dataPromise = fetch('/messages.json', {
       credentials: 'include'
     }).then(r => r.json());
-
 
     await this.mergeCachedMessages();
     this.chatView.mergeMessages(await chatStore.getOutbox());
@@ -123,21 +176,49 @@ class MainController {
     }
 
     const messages = data.messages.map(m => toMessageObj(m));
-
+    
     chatStore.setChatMessages(messages);
     this.chatView.mergeMessages(messages);
+  }
+  
+  async fallbackPollMessages() {
+    let data;
+    
+    try {
+      // ew XHR
+      data = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+        xhr.responseType = 'json';
+        xhr.onload = () => resolve(xhr.response);
+        xhr.onerror = () => reject(Error(xhr.statusText));
+        xhr.open('GET', '/messages.json')
+        xhr.send();
+      });
+    }
+    catch(e) {
+      console.log('Message get failed', e);
+    }
+    
+    const messages = data.messages.map(m => toMessageObj(m));
+    this.chatView.mergeMessages(messages);
+    setTimeout(() => this.fallbackPollMessages(), 10000);
   }
 
   registerServiceWorker() {
     if (!navigator.serviceWorker) {
-      this.globalWarningView.warn("Your browser doesn't support service workers, so this isn't going to work.");
       return Promise.reject(Error("Service worker not supported"));
     }
     return navigator.serviceWorker.register('/sw.js');
   }
 
   async registerPush() {
+    if (!navigator.serviceWorker) {
+      throw Error("Service worker not supported");
+    }
+    
     const reg = await navigator.serviceWorker.ready;
+    
     if (!reg.pushManager) {
       this.globalWarningView.warn("Your browser doesn't support service workers, so this isn't going to work.");
       throw Error("Push messaging not supported");

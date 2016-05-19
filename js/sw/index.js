@@ -4,7 +4,7 @@ import "../arrayFind";
 import * as chatStore from "../chatStore";
 import toMessageObj from "../toMessageObj";
 
-const staticVersion = '29';
+const staticVersion = '30';
 const cachesToKeep = ['chat-static-v' + staticVersion, 'chat-avatars'];
 
 self.addEventListener("install", event => {

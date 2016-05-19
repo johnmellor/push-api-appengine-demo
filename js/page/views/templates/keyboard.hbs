@@ -52,7 +52,7 @@
 </div>
 <div class="keys">
   {{#each emoji as |value category|}}
-    {{#each value}}<button{{#if @first}} class="category-{{category}}"{{/if}}>{{this}}</button>{{/each}}
+    {{#each value}}<button{{#if @first}} class="category-{{category}}"{{/if}}><div class="char">{{this}}</div></button>{{/each}}
   {{/each}}
 </div>
 <div class="space">

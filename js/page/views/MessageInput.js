@@ -24,34 +24,46 @@ export default class MessageInput extends EventEmitter {
 
     let outCheck = event => {
       if (event.target.closest('.message-input')) return;
-      this.container.classList.add('exiting');
+      
+      if (this.container.animate) {
+        this.container.classList.add('exiting');
+        this.container.animate([
+          {transform: 'translateY(' + (-this.keyboard.offsetHeight) + 'px)'},
+          {transform: 'none'}
+        ], {
+          duration: 200,
+          easing: 'ease-out'
+        }).onfinish = _ => {
+          this.container.classList.remove('active');
+          this.container.classList.remove('exiting');
+        };
+      }
+      else {
+        this.container.classList.remove('active');
+      }
 
+      document.removeEventListener('click', outCheck, true);
+    };
+
+    // TODO: can this be added so it doesn't pick up this event?
+    document.addEventListener('click', outCheck);
+    
+    if (this.container.animate) {
       this.container.animate([
-        {transform: 'translateY(' + (-this.keyboard.offsetHeight) + 'px)'},
+        {transform: 'translateY(' + this.keyboard.offsetHeight + 'px)'},
         {transform: 'none'}
       ], {
         duration: 200,
         easing: 'ease-out'
       }).onfinish = _ => {
-        this.container.classList.remove('active');
-        this.container.classList.remove('exiting');
+        this.keys.classList.add('render-all');
       };
-
-      document.removeEventListener('click', outCheck);
-    };
-
-    // TODO: can this be added so it doesn't pick up this event?
-    document.addEventListener('click', outCheck);
-
-    this.container.animate([
-      {transform: 'translateY(' + this.keyboard.offsetHeight + 'px)'},
-      {transform: 'none'}
-    ], {
-      duration: 200,
-      easing: 'ease-out'
-    }).onfinish = _ => {
-      this.keys.classList.add('render-all');
-    };
+    }
+    else {
+      requestAnimationFrame(() => {
+        this.keys.classList.add('render-all');
+      });
+    }
   }
 
   _initKeyboard() {
