@@ -3,7 +3,7 @@
 A demo App Engine server using https://w3c.github.io/push-api/ to send push
 messages to web browsers.
 
-Live version: https://jakearchibald-gcm.appspot.com/chat/
+Live version: https://jakearchibald-gcm.appspot.com/
 
 Currently requires Chrome 42+. Other browsers will be added as the implement the
 Push and Notifications APIs (Firefox Nightly already has partial support).
